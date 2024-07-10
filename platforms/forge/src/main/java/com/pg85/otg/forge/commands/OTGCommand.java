@@ -35,7 +35,8 @@ public class OTGCommand
 		commands.add(new RegionCommand());
 		commands.add(new UpdateCommand());
 		commands.add(new ExportBO4DataCommand());
-		
+		commands.add(new ExportPresetPackCommand());
+
 		commands.sort(Comparator.comparing(BaseCommand::getName));
 
 		LiteralArgumentBuilder<CommandSource> commandBuilder = Commands.literal("otg").requires(

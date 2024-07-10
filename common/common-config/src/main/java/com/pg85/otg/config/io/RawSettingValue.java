@@ -17,11 +17,23 @@ final class RawSettingValue
 	 */
 	public enum ValueType
 	{
-		PLAIN_SETTING,
-		FUNCTION,
-		BIG_TITLE,
-		BIG_TITLE_2,
-		SMALL_TITLE
+		PLAIN_SETTING(1),
+		FUNCTION(2),
+		BIG_TITLE(3),
+		BIG_TITLE_2(4),
+		SMALL_TITLE(5);
+
+		public final int id;
+
+		ValueType(int id)
+		{
+			this.id = id;
+		}
+
+		public int getId()
+		{
+			return id;
+		}
 	}
 
 	private final List<String> comments;

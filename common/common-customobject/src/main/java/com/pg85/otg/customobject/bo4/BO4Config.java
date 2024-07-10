@@ -97,10 +97,10 @@ public class BO4Config extends CustomObjectConfigFile
 
 	// Adjusts the height by this number before spawning. Handy when using "highestblock" for lowering BO3s that have a lot of ground under them included
 	public int heightOffset;
-	private Rotation inheritBO3Rotation;
+	public Rotation inheritBO3Rotation;
 	// If this is set to true then any air blocks in the bo3 will not be spawned
-	private boolean removeAir;
-	private boolean configRemoveAir;
+	public boolean removeAir;
+	public boolean configRemoveAir;
 	// Defaults to false. Set to true if this BO3 should spawn at the player spawn point. When the server starts one of the structures that has IsSpawnPoint set to true is selected randomly and is spawned, the others never get spawned.)
 	public boolean isSpawnPoint;
 
@@ -119,7 +119,7 @@ public class BO4Config extends CustomObjectConfigFile
 	// Replaces all the blocks of the given material in the BO3 with the StoneBlock configured for the biome it spawns in
 	public String replaceWithStoneBlock;
 	// Define a group that this BO3 belongs to and a range in chunks that members of this group should have to each other
-	private String bo3Group;
+	public String bo3Group;
 	public HashMap<String, Integer> bo4Groups;
 	// If this is set to true then this BO3 can spawn on top of or inside other BO3's
 	public boolean canOverride;
@@ -1360,12 +1360,13 @@ public class BO4Config extends CustomObjectConfigFile
 		}
 	}
 
-	private int bo4DataVersion = 3;
-	void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
+	private int bo4DataVersion = 4;
+	void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, boolean strip) throws IOException
 	{		
 		stream.writeInt(this.bo4DataVersion);
-		// Version 3 added fixedRotation		
-		StreamHelper.writeStringToStream(stream, this.fixedRotation == null ? null : this.fixedRotation.toString());
+		// Version 3 added fixedRotation
+		// Version 4 changed all enumerators to ordinals (instead of strings)
+		stream.writeByte(this.fixedRotation == null ? 0xff : this.fixedRotation.ordinal());
 		stream.writeInt(this.minimumSizeTop);
 		stream.writeInt(this.minimumSizeBottom);
 		stream.writeInt(this.minimumSizeLeft);
@@ -1375,12 +1376,17 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeInt(this.minY);
 		stream.writeInt(this.maxY);
 		stream.writeInt(this.minZ);
-		stream.writeInt(this.maxZ);		
-		StreamHelper.writeStringToStream(stream, this.author);
-		StreamHelper.writeStringToStream(stream, this.description);
-		StreamHelper.writeStringToStream(stream, this.settingsMode.name());
+		stream.writeInt(this.maxZ);
+		if (!strip) {
+			StreamHelper.writeStringToStream(stream, this.author);
+			StreamHelper.writeStringToStream(stream, this.description);
+		} else {
+			StreamHelper.writeStringToStream(stream, null);
+			StreamHelper.writeStringToStream(stream, null);
+		}
+		stream.writeByte(this.settingsMode.ordinal());
 		stream.writeInt(this.frequency);
-		StreamHelper.writeStringToStream(stream, this.spawnHeight.name());
+		stream.writeByte(this.spawnHeight.ordinal());
 		stream.writeInt(this.minHeight);
 		stream.writeInt(this.maxHeight);
 		stream.writeShort(this.inheritedBO3s.size());
@@ -1388,7 +1394,7 @@ public class BO4Config extends CustomObjectConfigFile
 			StreamHelper.writeStringToStream(stream, inheritedBO3);
 		}
 		StreamHelper.writeStringToStream(stream, this.inheritBO3);
-		StreamHelper.writeStringToStream(stream, this.inheritBO3Rotation.name());
+		stream.writeByte(this.inheritBO3Rotation.ordinal());
 		stream.writeBoolean(this.overrideChildSettings);
 		stream.writeBoolean(this.overrideParentHeight);
 		stream.writeBoolean(this.canOverride);
@@ -1440,11 +1446,7 @@ public class BO4Config extends CustomObjectConfigFile
 		{
 			func.writeToStream(stream);
 		}
-		
-		stream.writeInt(0); // Used to be particledata length
-		stream.writeInt(0); // Used to be spawnerdata length
-		stream.writeInt(0); // Used to be moddata length
-		
+
 		ArrayList<LocalMaterialData> materials = new ArrayList<LocalMaterialData>();
 		ArrayList<String> metaDataNames = new ArrayList<String>();
 		int randomBlockCount = 0;
@@ -1650,9 +1652,19 @@ public class BO4Config extends CustomObjectConfigFile
 
 				String author = StreamHelper.readStringFromBuffer(bufferDecompressed);
 				String description = StreamHelper.readStringFromBuffer(bufferDecompressed);
-				ConfigMode settingsMode = ConfigMode.valueOf(StreamHelper.readStringFromBuffer(bufferDecompressed));
+				ConfigMode settingsMode;
+				if (bo4DataVersion < 4) {
+					settingsMode = ConfigMode.valueOf(StreamHelper.readStringFromBuffer(bufferDecompressed));
+				} else {
+					settingsMode = ConfigMode.values()[bufferDecompressed.get()];
+				}
 				int frequency = bufferDecompressed.getInt();
-				SpawnHeightEnum spawnHeight = SpawnHeightEnum.valueOf(StreamHelper.readStringFromBuffer(bufferDecompressed));
+				SpawnHeightEnum spawnHeight;
+				if (bo4DataVersion < 4) {
+					spawnHeight = SpawnHeightEnum.valueOf(StreamHelper.readStringFromBuffer(bufferDecompressed));
+				} else {
+					spawnHeight = SpawnHeightEnum.values()[bufferDecompressed.get()];
+				}
 				int minHeight = bufferDecompressed.getInt();
 				int maxHeight = bufferDecompressed.getInt();
 				short inheritedBO3sSize = bufferDecompressed.getShort();
@@ -1663,7 +1675,12 @@ public class BO4Config extends CustomObjectConfigFile
 				}
 
 				String inheritBO3 = StreamHelper.readStringFromBuffer(bufferDecompressed);
-				Rotation inheritBO3Rotation = Rotation.valueOf(StreamHelper.readStringFromBuffer(bufferDecompressed));
+				Rotation inheritBO3Rotation;
+				if (bo4DataVersion < 4) {
+					inheritBO3Rotation = Rotation.valueOf(StreamHelper.readStringFromBuffer(bufferDecompressed));
+				} else {
+					inheritBO3Rotation = Rotation.getRotation(bufferDecompressed.get());
+				}
 				boolean overrideChildSettings = bufferDecompressed.get() != 0;
 				boolean overrideParentHeight = bufferDecompressed.get() != 0;
 				boolean canOverride = bufferDecompressed.get() != 0;
@@ -1807,9 +1824,11 @@ public class BO4Config extends CustomObjectConfigFile
 				}
 
 				// Legacy settings, hoping they were always 0 and noone actually used them :/.
-				bufferDecompressed.getInt(); // Used to be particles
-				bufferDecompressed.getInt(); // Used to be spawners
-				bufferDecompressed.getInt(); // Used to be moddata
+				if (bo4DataVersion < 4) {
+					bufferDecompressed.getInt(); // Used to be particles
+					bufferDecompressed.getInt(); // Used to be spawners
+					bufferDecompressed.getInt(); // Used to be moddata
+				}
 				//
 					
 				ArrayList<BlockFunction<?>> newBlocks = new ArrayList<>();

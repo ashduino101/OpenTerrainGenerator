@@ -1,11 +1,6 @@
 package com.pg85.otg.customobject.bo4;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 
 import com.pg85.otg.customobject.CustomObjectManager;
@@ -28,6 +23,20 @@ public class BO4Data
 		File file = new File(filePath);
 		return file.exists();
 	}
+
+	public static void generateBO4DataToStream(BO4Config config, DataOutputStream stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, boolean strip) {
+		try {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(bos);
+			config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker, strip);
+			byte[] compressedBytes = com.pg85.otg.util.CompressionUtils.compress(bos.toByteArray(), logger);
+			stream.write(compressedBytes, 0, compressedBytes.length);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 	
 	public static void generateBO4Data(BO4Config config, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker)
 	{
@@ -45,7 +54,7 @@ public class BO4Data
 			try {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				DataOutputStream dos = new DataOutputStream(bos);
-				config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
+				config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker, false);
 				byte[] compressedBytes = com.pg85.otg.util.CompressionUtils.compress(bos.toByteArray(), logger);
 				dos.close();
 				FileOutputStream fos = new FileOutputStream(file);

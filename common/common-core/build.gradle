@@ -29,7 +29,8 @@ dependencies
 		'com.fasterxml.jackson.core:jackson-databind:2.9.7',
 		'org.yaml:snakeyaml:1.23',
 		'it.unimi.dsi:fastutil:8.2.1',
-		'com.google.guava:guava:23.0'
+		'com.google.guava:guava:23.0',
+		'org.tukaani:xz:1.9'
     )
 }
 
@@ -44,6 +45,7 @@ shadowJar {
 		include dependency(':jackson-dataformat-yaml')
 		include dependency(':jackson-databind')
 		include dependency(':snakeyaml')
+		include dependency(':xz')
     }
 	// TODO: ShadowJar doesn't appear to be working correctly, Forge isn't picking
 	// up shaded dependencies. Let's hope Forge know how to resolve duplicate
