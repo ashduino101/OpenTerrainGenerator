@@ -620,7 +620,10 @@ public class SpigotWorldGenRegion extends LocalWorldGenRegion
 					return;
 				}
 				// Specify which type of entity to spawn
-				nbtTagCompound.setString("id", entityData.getResourceLocation());
+                if (nbtTagCompound == null) {
+					nbtTagCompound = new NBTTagCompound();
+				}
+                nbtTagCompound.setString("id", entityData.getResourceLocation());
 			}
 			else if (entityData.getNBTTag() != null)
 			{
