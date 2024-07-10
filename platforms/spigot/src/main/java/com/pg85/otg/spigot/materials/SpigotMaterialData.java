@@ -14,6 +14,7 @@ import org.bukkit.craftbukkit.v1_16_R3.block.data.CraftBlockData;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 /**
  * Implementation of LocalMaterial that wraps one of Minecraft's Blocks.
@@ -118,13 +119,7 @@ public class SpigotMaterialData extends LocalMaterialData
 	@Override
 	public String getRegistryName()
 	{
-		return this.blockData == null ? null : this.blockData.toString().substring(0, this.blockData.toString().indexOf("}")).replace("Block{", "");
-	}
-
-	@Override
-	public int getBlockDataHash()
-	{
-		return this.blockData == null ? null : this.blockData.hashCode();
+		return this.blockData == null ? null : IRegistry.BLOCK.getKey(this.blockData.getBlock()).toString();
 	}
 
 	@Override

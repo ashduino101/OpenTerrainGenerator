@@ -170,7 +170,7 @@ public class MaterialSet
 			return true;
 		}
 		// Check if the material is included without data (matches all of the same registry name)		
-		if (Arrays.binarySearch(this.materialIntSet, material.getBlockDataHash()) >= 0)
+		if (Arrays.binarySearch(this.materialIntSet, material.getRegistryName().hashCode()) >= 0)
 		{
 			return true;
 		}
