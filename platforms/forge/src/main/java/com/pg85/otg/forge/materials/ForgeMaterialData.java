@@ -118,6 +118,12 @@ public class ForgeMaterialData extends LocalMaterialData
 	}
 
 	@Override
+	public int getBlockDataHash()
+	{
+		return this.blockData == null ? null : this.blockData.hashCode();
+	}
+
+	@Override
 	public boolean isLiquid()
 	{
 		return this.blockData != null && this.blockData.getMaterial().isLiquid();
