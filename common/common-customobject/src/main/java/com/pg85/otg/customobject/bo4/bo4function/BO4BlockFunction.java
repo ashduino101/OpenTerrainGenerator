@@ -86,7 +86,7 @@ public class BO4BlockFunction extends BlockFunction<BO4Config>
 		{
 			for(int i = 0; i < materials.length; i++)
 			{
-				if(materials[i].equals(this.material))
+				if(materials[i] != null && materials[i].equals(this.material))
 				{
 					stream.writeShort(i);
 					bFound = true;
@@ -103,7 +103,7 @@ public class BO4BlockFunction extends BlockFunction<BO4Config>
 		{
 			for(int i = 0; i < metaDataNames.length; i++)
 			{
-				if(metaDataNames[i].equals(this.nbtName))
+				if(metaDataNames[i] != null && metaDataNames[i].equals(this.nbtName))
 				{
 					stream.writeShort(i);
 					bFound = true;

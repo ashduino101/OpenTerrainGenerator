@@ -1,5 +1,9 @@
 package com.pg85.otg.util.materials;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -230,6 +234,54 @@ public class MaterialSet
 		}
 
 		return builder.toString();
+	}
+
+	/**
+	 * Writes the material set to a stream.
+	 */
+	public void writeToStream(DataOutput stream) throws IOException {
+		byte flags = 0;
+		flags |= (byte) (this.allMaterials ? 1 : 0);
+		flags |= (byte) (this.allSolidMaterials ? 2 : 0);
+		flags |= (byte) (this.allNonSolidMaterials ? 4 : 0);
+		stream.writeByte(flags);
+		if (this.allMaterials) {
+			return;
+		}
+		stream.writeShort(this.tags.size());
+		for (MaterialSetEntry tag : this.tags) {
+			stream.writeUTF(tag.toString());
+		}
+		stream.writeShort(this.materials.size());
+		for (MaterialSetEntry material : this.materials) {
+			stream.writeUTF(material.toString());
+		}
+	}
+
+	public void parseAndAddFromStream(DataInput stream, IMaterialReader materialReader) throws IOException, InvalidConfigException {
+		byte flags = stream.readByte();
+		if ((flags & 1) != 0) {
+			this.allMaterials = true;
+			return;
+		}
+		if ((flags & 2) != 0) {
+			this.allSolidMaterials = true;
+		}
+		if ((flags & 4) != 0) {
+			this.allNonSolidMaterials = true;
+		}
+		short numTags = stream.readShort();
+		for (int i = 0; i < numTags; i++) {
+			String tagName = stream.readUTF();
+			LocalMaterialTag tag = materialReader.readTag(tagName);
+			this.addTag(new MaterialSetEntry(tag));
+		}
+		short numMaterials = stream.readShort();
+		for (int i = 0; i < numMaterials; i++) {
+			String materialName = stream.readUTF();
+			LocalMaterialData material = materialReader.readMaterial(materialName);
+			this.addTag(new MaterialSetEntry(material));
+		}
 	}
 
 	/**

@@ -8,6 +8,8 @@ import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IWorldGenRegion;
 import com.pg85.otg.util.materials.MaterialSet;
 
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.List;
 
 public class BlockCheck extends BO3Check
@@ -57,6 +59,13 @@ public class BlockCheck extends BO3Check
 	protected String makeString(String name)
 	{
 		return name + '(' + x + ',' + y + ',' + z + makeMaterials(toCheck) + ')';
+	}
+
+	/**
+	 * Writes the inner material list to a stream.
+	 */
+	public void writeMaterialsToStream(DataOutput stream) throws IOException {
+		this.toCheck.writeToStream(stream);
 	}
 
 	@Override

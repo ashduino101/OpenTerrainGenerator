@@ -1,9 +1,8 @@
 package com.pg85.otg.presets;
 
 import com.pg85.otg.OTG;
-import com.pg85.otg.config.ConfigFunction;
 import com.pg85.otg.config.biome.BiomeConfig;
-import com.pg85.otg.config.io.FileSettingsPacker;
+import com.pg85.otg.config.io.PackedFileSettings;
 import com.pg85.otg.config.io.FileSettingsReader;
 import com.pg85.otg.config.io.NameTable;
 import com.pg85.otg.config.io.SettingsMap;
@@ -11,41 +10,25 @@ import com.pg85.otg.constants.Constants;
 import com.pg85.otg.constants.SettingsEnums;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.bo3.BO3;
-import com.pg85.otg.customobject.bo3.BO3Config;
-import com.pg85.otg.customobject.bo3.bo3function.BO3BlockFunction;
 import com.pg85.otg.customobject.bo3.bo3function.BO3BranchFunction;
 import com.pg85.otg.customobject.bo4.BO4;
-import com.pg85.otg.customobject.bo4.BO4Config;
 import com.pg85.otg.customobject.bo4.BO4Data;
-import com.pg85.otg.customobject.bo4.BO4NBTPacker;
+import com.pg85.otg.customobject.bo4.bo4function.BO4BranchFunction;
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
-import com.pg85.otg.customobject.bofunctions.BranchFunction;
-import com.pg85.otg.customobject.config.CustomObjectConfigFile;
-import com.pg85.otg.customobject.config.io.FileSettingsReaderBO4;
-import com.pg85.otg.customobject.config.io.SettingsReaderBO4;
-import com.pg85.otg.customobject.creator.ObjectCreator;
-import com.pg85.otg.customobject.creator.ObjectType;
-import com.pg85.otg.customobject.resource.CustomStructureResource;
 import com.pg85.otg.customobject.structures.Branch;
-import com.pg85.otg.customobject.structures.StructuredCustomObject;
-import com.pg85.otg.customobject.structures.bo4.BO4CustomStructure;
-import com.pg85.otg.customobject.structures.bo4.BO4CustomStructureCoordinate;
-import com.pg85.otg.customobject.util.BoundingBox;
-import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
+import com.pg85.otg.util.nbt.NamedBinaryTag;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
-
-import com.pg85.otg.util.nbt.NamedBinaryTag;
-import org.tukaani.xz.LZMA2Options;
-import org.tukaani.xz.XZOutputStream;
 
 /**
  * A packer for OTG presets.
@@ -58,8 +41,7 @@ public class PresetPacker
 
     private static final String magic = "OTG\n";
     private static final int version = 1;
-    public static void packToFile(Preset preset, FileOutputStream file, ILogger logger) throws IOException
-    {
+    public static void packToFile(Preset preset, FileOutputStream file, ILogger logger) throws IOException {
         DataOutputStream stream = new DataOutputStream(file);
         FileChannel channel = file.getChannel();
 
@@ -69,16 +51,13 @@ public class PresetPacker
 
         NameTable nameTable = new NameTable();
 
-        LZMA2Options options = new LZMA2Options();
-        options.setPreset(6);
-
         Path presetDir = preset.getPresetFolder();
 
         // Write world config
         long worldConfigOffset = channel.position();  // Should always be after the header, but we'll check just in case
         File worldConfigFile = new File(presetDir.toString(), Constants.WORLD_CONFIG_FILE);
         SettingsMap worldConfigSettings = FileSettingsReader.read(preset.getFolderName(), worldConfigFile, logger);
-        FileSettingsPacker.packToStream(worldConfigSettings, stream, logger, nameTable);
+        PackedFileSettings.packToStream(worldConfigSettings, stream, logger, nameTable);
         stream.flush();
 
         // Write map image if necessary
@@ -94,6 +73,7 @@ public class PresetPacker
             int bytesRead = imageIn.read(imageData);
             OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.valueOf(bytesRead));
 
+            // We don't need to compress it since it's already zlib-compressed per PNG spec
             stream.write(imageData, 0, bytesRead);
             stream.flush();
         }
@@ -102,89 +82,66 @@ public class PresetPacker
         HashMap<String, Long> biomeConfigOffsets = new HashMap<>();
         for (IBiomeConfig biomeConfig : preset.getAllBiomeConfigs())
         {
-            ByteArrayOutputStream preCompress = new ByteArrayOutputStream();
-            DataOutput preCompOut = new DataOutputStream(preCompress);
             SettingsMap settings = ((BiomeConfig)biomeConfig).getSettingsAsMap();
             biomeConfigOffsets.put(biomeConfig.getName(), channel.position());
-            FileSettingsPacker.packToStream(settings, preCompOut, logger, nameTable);
-            XZOutputStream out = new XZOutputStream(stream, options);
-            out.write(preCompress.toByteArray(), 0, preCompress.size());
-            out.finish();
+            PackedFileSettings.packToStream(settings, stream, logger, nameTable);
             stream.flush();
         }
 
         // Write biome objects
         HashMap<String, Long> biomeObjectOffsets = new HashMap<>();
-        for (IBiomeConfig biomeConfig : preset.getAllBiomeConfigs())
-        {
-            for (ConfigFunction<IBiomeConfig> res : ((BiomeConfig)biomeConfig).getResourceQueue())
+
+        ArrayList<String> boNames = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getAllBONamesForPreset(preset.getFolderName(), OTG.getEngine().getLogger(), OTG.getEngine().getOTGRootFolder());
+
+        Map<String, NamedBinaryTag> nbtFiles = new HashMap<>();
+
+        for (String boName : boNames) {
+            CustomObject object = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(boName, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
             {
-                if (res instanceof CustomStructureResource)
+                if (object != null)  // Structure was in resource list but file could not be found.
                 {
-                    for (IStructuredCustomObject structure : ((CustomStructureResource)res).getObjects(preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker()))
-                    {
-                        if (structure != null)  // Structure was in resource list but file could not be found.
-                        {
-                            if (structure instanceof BO4)
-                            {
-                                BO4NBTPacker bnp = new BO4NBTPacker((BO4) structure);
-
-                                ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
-                                DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
-
-                                biomeObjectOffsets.put(structure.getName(), channel.position());
-
-                                BO4Data.generateBO4DataToStream(((BO4)structure).getConfig(), dataOut, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), true);
-
-                                stream.writeInt(byteArrayOut.size());
-                                stream.write(byteArrayOut.toByteArray(), 0, byteArrayOut.size());
-
-                                OTG.getEngine().getCustomObjectManager().getGlobalObjects().unloadCustomObjectFiles();
-                            }
-                        }
+                    if (object instanceof BO4) {
+                        stream.writeByte(4);
+                        packBO4((BO4) object, channel, stream, preset, biomeObjectOffsets, nbtFiles);
+                    } else if (object instanceof BO3) {
+                        stream.writeByte(3);
+                        packBO3((BO3) object, channel, stream, preset, biomeObjectOffsets, nbtFiles);
                     }
                 }
             }
         }
-        ArrayList<String> boNames = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getAllBONamesForPreset(preset.getFolderName(), OTG.getEngine().getLogger(), OTG.getEngine().getOTGRootFolder());
 
-        for (String boName : boNames)
-        {
-            CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(boName, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
-            if (bo instanceof BO4)
-            {
-                stream.writeByte(4);  // BO4
+        OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("Writing %d NBT files", nbtFiles.size()));
 
-                ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
-                DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
-
-                biomeObjectOffsets.put(bo.getName(), channel.position());
-
-                BO4Data.generateBO4DataToStream(((BO4) bo).getConfig(), dataOut, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), logger, OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), true);
-
-                stream.writeInt(byteArrayOut.size());
-                stream.write(byteArrayOut.toByteArray(), 0, byteArrayOut.size());
-
-                OTG.getEngine().getCustomObjectManager().getGlobalObjects().unloadCustomObjectFiles();
+        Map<String, byte[]> nbt = new HashMap<>();
+        Set<byte[]> containedHashes = new HashSet<>();
+        for (Map.Entry<String, NamedBinaryTag> tag : nbtFiles.entrySet()) {
+            NamedBinaryTag value = tag.getValue();
+            if (value == null) continue;
+            ByteArrayOutputStream nbtStream = new ByteArrayOutputStream();
+            value.writeTo(nbtStream, false);
+            byte[] arr = nbtStream.toByteArray();
+            try {
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                byte[] hash = md.digest(arr);
+                if (!containedHashes.contains(hash)) {
+                    containedHashes.add(hash);
+                    nbt.put(tag.getKey(), arr);
+                }
+            } catch (NoSuchAlgorithmException e) {
+                // unreachable (hopefully)
             }
-            else if (bo instanceof BO3)
-            {
-                stream.writeByte(3);  // BO3
-
-                ByteArrayOutputStream preCompress = new ByteArrayOutputStream();
-                DataOutput preCompOut = new DataOutputStream(preCompress);
-                biomeObjectOffsets.put(bo.getName(), channel.position());
-                XZOutputStream out = new XZOutputStream(stream, options);  // We LZMA-compress serialized BO3s to save space -- we don't do this with BO4Datas because they are already zlib-compressed
-                FileSettingsPacker.packToStream(FileSettingsReader.read(bo.getName(), ((BO3) bo).getConfig().getFile(), logger), preCompOut, logger, nameTable);
-                out.write(preCompress.toByteArray(), 0, preCompress.size());
-                out.finish();
-                stream.flush();
-            } else {
-                continue;  // no BO2 support
-            }
-            stream.flush();
         }
 
+        long nbtOffset = channel.position();
+
+        stream.writeInt(nbt.size());
+        for (Map.Entry<String, byte[]> tag : nbt.entrySet()) {
+            stream.writeUTF(tag.getKey());
+            byte[] val = tag.getValue();
+            stream.writeInt(val.length);
+            stream.write(val);
+        }
 
         // Here comes the metadata -- fill in the offset in the header
         long metadataOffset = channel.position();
@@ -218,6 +175,107 @@ public class PresetPacker
             stream.writeLong(object.getValue());
         }
 
-        // Dependency offsets
+        // Resource offsets
+        stream.writeLong(nbtOffset);
+    }
+
+//    private static void scanEntries(File dir, HashMap<String, IStructuredCustomObject> objects, BO3Loader bo3Loader, BO4Loader bo4Loader) {
+//        for (File f : dir.listFiles()) {
+//            if (f.isDirectory()) {
+//                scanEntries(f);
+//            } else {
+//                String name = f.getName();
+//
+//                if ()
+//                objects.put(f.getName(), )
+//            }
+//        }
+//    }
+
+    private static void packBO4(BO4 object, FileChannel channel, DataOutputStream stream, Preset preset, HashMap<String, Long> offsets, Map<String, NamedBinaryTag> nbtFiles) throws IOException {
+        OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, object.getName());
+//        BO4NBTPacker bnp = new BO4NBTPacker(object);
+
+        ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
+        DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
+
+        long offset = channel.position();
+
+        BO4Data.generateBO4DataToStream((object).getConfig(), dataOut, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), false);
+
+        offsets.put(object.getName(), offset);
+
+        stream.writeInt(byteArrayOut.size());
+        stream.write(byteArrayOut.toByteArray(), 0, byteArrayOut.size());
+        stream.flush();
+
+        BlockFunction<?>[] funcs = object.getConfig().getBlockFunctions(preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+        for (BlockFunction<?> func : funcs) {
+            nbtFiles.putIfAbsent(func.nbtName, func.nbt);
+        }
+
+        for (Branch branch : object.getBranches()) {
+            if (branch instanceof BO4BranchFunction) {
+                List<String> branchNames = ((BO4BranchFunction)branch).getBranchObjectNames();
+                for (String name : branchNames) {
+                    CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(name, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+                    if (bo == null) {
+                        OTG.getEngine().getLogger().log(LogLevel.WARN, LogCategory.MAIN, String.format("Skipping non-existent branch '%s'", name));
+                        continue;
+                    }
+                    if (!offsets.containsKey(bo.getName())) {
+                        if (bo instanceof BO4) {
+                            packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles);
+                        } else if (bo instanceof BO3) {
+                            packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles);
+                        }
+                    }
+                }
+            }
+        }
+
+//        OTG.getEngine().getCustomObjectManager().getGlobalObjects().unloadCustomObjectFiles();
+    }
+
+    public static void packBO3(BO3 object, FileChannel channel, DataOutputStream stream, Preset preset, HashMap<String, Long> offsets, Map<String, NamedBinaryTag> nbtFiles) throws IOException {
+        OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, object.getName());
+
+        ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
+        DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
+
+        long offset = channel.position();
+
+        object.getConfig().writeToStream(dataOut, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+
+        offsets.put(object.getName(), offset);
+
+        stream.writeInt(byteArrayOut.size());
+        stream.write(byteArrayOut.toByteArray(), 0, byteArrayOut.size());
+        stream.flush();
+
+        BlockFunction<?>[] funcs = object.getConfig().getBlocks(0);
+        for (BlockFunction<?> func : funcs) {
+            nbtFiles.putIfAbsent(func.nbtName, func.nbt);
+        }
+
+        for (Branch branch : object.getBranches(Rotation.NORTH)) {
+            if (branch instanceof BO3BranchFunction) {
+                List<String> branchNames = ((BO3BranchFunction)branch).getBranchObjectNames();
+                for (String name : branchNames) {
+                    CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(name, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+                    if (bo == null) {
+                        OTG.getEngine().getLogger().log(LogLevel.WARN, LogCategory.MAIN, String.format("Skipping non-existent branch '%s'", name));
+                        continue;
+                    }
+                    if (!offsets.containsKey(bo.getName())) {
+                        if (bo instanceof BO4) {
+                            packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles);
+                        } else if (bo instanceof BO3) {
+                            packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -474,13 +474,14 @@ public class NamedBinaryTag
 	 * Read a tag and its nested tags from an InputStream.
 	 *
 	 * @param os stream to write to, like a FileOutputStream
+	 * @param compressed if the data should be gzip-compressed
 	 * @throws IOException if this is not a valid NBT structure or if any
 	 *			 IOException occurred.
 	 */
-	public void writeTo(OutputStream os) throws IOException
+	public void writeTo(OutputStream os, boolean compressed) throws IOException
 	{
-		GZIPOutputStream gzos;
-		DataOutputStream dos = new DataOutputStream(gzos = new GZIPOutputStream(os));
+		OutputStream gzos = compressed ? new GZIPOutputStream(os) : os;
+		DataOutputStream dos = new DataOutputStream(gzos);
 		dos.writeByte(type.ordinal());
 		if (type != Type.TAG_End)
 		{

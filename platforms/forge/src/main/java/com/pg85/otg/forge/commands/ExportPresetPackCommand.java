@@ -4,12 +4,7 @@ import java.io.*;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.pg85.otg.OTG;
-import com.pg85.otg.config.biome.BiomeConfig;
-import com.pg85.otg.config.io.FileSettingsPacker;
-import com.pg85.otg.config.io.NameTable;
-import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
-import com.pg85.otg.interfaces.IBiomeConfig;
 import com.pg85.otg.presets.Preset;
 import com.pg85.otg.presets.PresetPacker;
 import com.pg85.otg.util.logging.LogCategory;

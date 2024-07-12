@@ -1,11 +1,13 @@
 package com.pg85.otg.customobject.bo3;
 
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.pg85.otg.config.standard.WorldStandardValues;
 import com.pg85.otg.constants.SettingsEnums.ConfigMode;
 import com.pg85.otg.customobject.CustomObjectManager;
@@ -15,10 +17,9 @@ import com.pg85.otg.customobject.bo3.bo3function.BO3BranchFunction;
 import com.pg85.otg.customobject.bo3.bo3function.BO3EntityFunction;
 import com.pg85.otg.customobject.bo3.bo3function.BO3RandomBlockFunction;
 import com.pg85.otg.customobject.bo3.bo3function.BO3WeightedBranchFunction;
-import com.pg85.otg.customobject.bo3.checks.BO3Check;
-import com.pg85.otg.customobject.bo3.checks.BlockCheck;
-import com.pg85.otg.customobject.bo3.checks.ModCheck;
-import com.pg85.otg.customobject.bo3.checks.ModCheckNot;
+import com.pg85.otg.customobject.bo3.checks.*;
+import com.pg85.otg.customobject.bo4.bo4function.BO4BlockFunction;
+import com.pg85.otg.customobject.bo4.bo4function.BO4RandomBlockFunction;
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
 import com.pg85.otg.customobject.bofunctions.BranchFunction;
 import com.pg85.otg.customobject.config.CustomObjectConfigFile;
@@ -35,6 +36,7 @@ import com.pg85.otg.interfaces.ICustomObjectManager;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IModLoadedChecker;
+import com.pg85.otg.util.helpers.StreamHelper;
 import com.pg85.otg.util.nbt.NamedBinaryTag;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.MaterialSet;
@@ -743,5 +745,202 @@ public class BO3Config extends CustomObjectConfigFile
 		BO3Check[] checks = Arrays.copyOf(this.bo3Checks[0], l+1);
 		checks[l] = new BlockCheck(0, -1, 0, spawnOnBlockType);
 		this.bo3Checks[0] = checks;
+	}
+
+	private static final int bo3DataVersion = 1;
+	public void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
+	{
+		stream.writeInt(bo3DataVersion);
+
+		StreamHelper.writeStringToStream(stream, this.author);
+		StreamHelper.writeStringToStream(stream, this.description);
+		// We don't write SettingsMode here
+
+		stream.writeBoolean(this.tree);
+		stream.writeByte(this.frequency);  // 1-200
+		stream.writeFloat((float)this.rarity);  // 1-100
+		stream.writeInt(this.maxSpawn);
+		stream.writeBoolean(this.rotateRandomly);
+		stream.writeByte(this.spawnHeight.ordinal());
+		stream.writeShort(this.spawnHeightOffset);
+		stream.writeInt(this.spawnHeightVariance);
+
+		stream.writeShort(this.minHeight);
+		stream.writeShort(this.maxHeight);
+
+		stream.writeByte(this.extrudeMode.ordinal());
+		this.extrudeThroughBlocks.writeToStream(stream);
+
+		stream.writeInt(this.maxBranchDepth);
+
+		this.sourceBlocks.writeToStream(stream);
+
+		stream.writeByte(this.maxPercentageOutsideSourceBlock);
+		stream.writeByte(this.outsideSourceBlock.ordinal());
+
+		stream.writeBoolean(this.doReplaceBlocks);
+
+		stream.writeBoolean(this.isOTGPlus);
+
+		// Resources
+		// TODO: rewrite this part (it probably doesn't work)
+
+		BO3BlockFunction[] blocks = getBlocks(0);
+		stream.writeBoolean(blocks.length > 0);  // hasBlocks
+		if (blocks.length > 0) {
+			ArrayList<LocalMaterialData> materials = new ArrayList<LocalMaterialData>();
+			ArrayList<String> metaDataNames = new ArrayList<String>();
+			int randomBlockCount = 0;
+			int nonRandomBlockCount = 0;
+			for (BO3BlockFunction block : blocks) {
+				if (block instanceof BO3RandomBlockFunction) {
+					randomBlockCount++;
+					for (LocalMaterialData material : ((BO3RandomBlockFunction) block).blocks) {
+						if (!materials.contains(material)) {
+							materials.add(material);
+						}
+					}
+				} else {
+					nonRandomBlockCount++;
+				}
+
+				if (block.material != null && !materials.contains(block.material)) {
+					materials.add(block.material);
+				}
+				if (block.nbtName != null && !metaDataNames.contains(block.nbtName)) {
+					metaDataNames.add(block.nbtName);
+				}
+			}
+
+			String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
+			LocalMaterialData[] blocksArr = materials.toArray(new LocalMaterialData[0]);
+
+			stream.writeShort(metaDataNamesArr.length);
+			for (int i = 1; i < metaDataNamesArr.length; i++) {
+				StreamHelper.writeStringToStream(stream, metaDataNamesArr[i]);
+			}
+
+			stream.writeShort(blocksArr.length);
+			for (int i = 1; i < blocksArr.length; i++) {
+				StreamHelper.writeStringToStream(stream, blocksArr[i].getName());
+			}
+
+			int bitsPerBlock = 32 - Integer.numberOfLeadingZeros(blocksArr.length);
+
+			// TODO: This assumes that loading blocks in a different order won't matter, which may not be true?
+			// Anything that spawns on top, entities/spawners etc, should be spawned last tho, so shouldn't be a problem?
+
+			// Get bounds
+			int minX = Integer.MAX_VALUE;
+			int maxX = Integer.MIN_VALUE;
+			int minY = Integer.MAX_VALUE;
+			int maxY = Integer.MIN_VALUE;
+			int minZ = Integer.MAX_VALUE;
+			int maxZ = Integer.MIN_VALUE;
+			for (BO3BlockFunction block : blocks) {
+				if (block.x < minX) {
+					minX = block.x;
+				}
+				if (block.x > maxX) {
+					maxX = block.x;
+				}
+				if (block.y < minY) {
+					minY = block.y;
+				}
+				if (block.y > maxY) {
+					maxY = block.y;
+				}
+				if (block.z < minZ) {
+					minZ = block.z;
+				}
+				if (block.z > maxZ) {
+					maxZ = block.z;
+				}
+			}
+
+			maxX += 1;
+			maxY += 1;
+			maxZ += 1;
+
+			stream.writeShort(minX);
+//		stream.writeShort(maxX);
+			stream.writeShort(minY);
+//		stream.writeShort(maxY);
+			stream.writeShort(minZ);
+//		stream.writeShort(maxZ);
+
+			// Convert the blocks to a 1-dimensional array
+			int sizeX = maxX - minX;
+			int sizeY = maxY - minY;
+			int sizeZ = maxZ - minZ;
+			List<BO3BlockFunction> blocksFlat = Arrays.asList(new BO3BlockFunction[sizeX * sizeY * sizeZ]);
+
+			for (BO3BlockFunction block : blocks) {
+				int normX = block.x - minX;
+				int normY = block.y - minY;
+				int normZ = block.z - minZ;
+				int idx = (normZ * sizeX * sizeY) + (normY * sizeX) + normX;
+				blocksFlat.set(idx, block);
+			}
+
+			// Pack them to the stream
+			long currentLong = 0;
+			int bitpos = 0;
+			for (BO3BlockFunction block : blocksFlat) {
+				int material = 0;
+				if (block != null) {
+					material = materials.indexOf(block.material);
+					if (material == -1) {
+						material = 0;  // 0 will always be null
+					}
+				}
+
+				currentLong |= ((long) material << bitpos);
+				bitpos += bitsPerBlock;
+				if ((bitpos + bitsPerBlock) >= 64) {  // will the next block overflow?
+					// write the long to the stream
+					stream.writeLong(currentLong);
+					// reset the state
+					bitpos = 0;
+					currentLong = 0;
+				}
+			}
+		}
+
+		stream.writeInt(this.bo3Checks.length);
+		for (BO3Check func : this.bo3Checks[0]) {
+			if (func instanceof BlockCheck) {
+				stream.writeByte(0);
+			} else if (func instanceof LightCheck) {
+				stream.writeByte(1);
+			} else if (func instanceof ModCheck) {
+				stream.writeByte(2);
+			}
+            stream.writeShort(func.x);
+			stream.writeShort(func.y);
+			stream.writeShort(func.z);
+
+			if (func instanceof BlockCheck) {
+				BlockCheck check = (BlockCheck) func;
+				check.writeMaterialsToStream(stream);
+			} else if (func instanceof LightCheck) {
+				LightCheck check = (LightCheck) func;
+				check.writeLevelsToStream(stream);
+			} else if (func instanceof ModCheck) {
+				ModCheck check = (ModCheck) func;
+				check.writeModsToStream(stream);
+			}
+		}
+
+		// TODO: save/load these as binary
+		stream.writeInt(this.branches[0].length);
+		for (BO3BranchFunction func : this.branches[0]) {
+			stream.writeUTF(func.write());
+		}
+
+		stream.writeInt(this.entityFunctions[0].length);
+		for (BO3EntityFunction func : this.entityFunctions[0]) {
+			stream.writeUTF(func.write());
+		}
 	}
 }

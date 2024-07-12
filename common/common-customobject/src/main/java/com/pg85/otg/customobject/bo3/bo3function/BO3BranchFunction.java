@@ -15,6 +15,7 @@ import com.pg85.otg.util.bo3.Rotation;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents the Branch(..) function in the BO3 files.
@@ -87,6 +88,11 @@ public class BO3BranchFunction extends BranchFunction<BO3Config>
 			}
 		}
 		return null;
+	}
+
+	public List<String> getBranchObjectNames() {
+		return this.branches.stream().map(b -> b.customObjectName)
+				.collect(Collectors.toList());
 	}
 
 	@Override

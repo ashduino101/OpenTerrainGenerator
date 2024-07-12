@@ -1,9 +1,15 @@
 package com.pg85.otg.customobject.bo3.bo3function;
 
+import java.io.DataOutput;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Random;
 
 import com.pg85.otg.customobject.bo3.BO3Config;
+import com.pg85.otg.customobject.bo4.BO4Config;
+import com.pg85.otg.customobject.bo4.bo4function.BO4RandomBlockFunction;
 import com.pg85.otg.util.nbt.NBTHelper;
 import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.ILogger;
@@ -227,7 +233,125 @@ public class BO3RandomBlockFunction extends BO3BlockFunction
 			}
 		}
 	}
-	
+
+	public void writeToStream(String[] metaDataNames, LocalMaterialData[] materials, DataOutput stream) throws IOException
+	{
+		stream.writeShort(this.y);
+
+		stream.writeByte(this.blocks.length);
+
+		boolean bFound;
+		for(int i = 0; i < this.blocks.length; i++)
+		{
+			byte blockChance = this.blockChances[i];
+			stream.writeByte(blockChance);
+
+			bFound = false;
+			if(this.blocks[i] != null)
+			{
+				for(int j = 0; j < materials.length; j++)
+				{
+					if(materials[j].equals(this.blocks[i]))
+					{
+						stream.writeShort(j);
+						bFound = true;
+						break;
+					}
+				}
+			}
+			if(!bFound)
+			{
+				stream.writeShort(-1);
+			}
+		}
+
+		boolean metaDataFound = false;
+        for (String metaDataName : this.metaDataNames) {
+            if (metaDataName != null) {
+                metaDataFound = true;
+                break;
+            }
+        }
+
+		if(metaDataFound)
+		{
+			stream.writeByte(this.blocks.length);
+			for(int i = 0; i < this.metaDataNames.length; i++)
+			{
+				bFound = false;
+				if(this.metaDataNames[i] != null)
+				{
+                    for (String metaDataName : metaDataNames) {
+                        if (metaDataName.equals(this.metaDataNames[i])) {
+                            stream.writeShort(i);
+                            bFound = true;
+                            break;
+                        }
+                    }
+				}
+				if(!bFound)
+				{
+					stream.writeShort(-1);
+				}
+			}
+		} else {
+			stream.writeByte(0);
+		}
+	}
+
+	public static BO3RandomBlockFunction fromStream(int x, int z, String[] metaDataNames, LocalMaterialData[] materials, BO3Config holder, ByteBuffer buffer, ILogger logger) throws IOException
+	{
+		BO3RandomBlockFunction rbf = new BO3RandomBlockFunction(holder);
+
+		File file = holder.getFile();
+
+		rbf.x = x;
+		rbf.y = buffer.getShort();
+		rbf.z = z;
+
+		byte blocksLength = buffer.get();
+
+		rbf.blockCount = blocksLength;
+		rbf.blocks = new LocalMaterialData[blocksLength];
+		rbf.blockChances = new byte[blocksLength];
+		rbf.metaDataNames = new String[blocksLength];
+		rbf.metaDataTags = new NamedBinaryTag[blocksLength];
+
+		for(int i = 0; i < blocksLength; i++)
+		{
+			rbf.blockChances[i] = buffer.get();
+			short materialId = buffer.getShort();
+			if(materialId != -1)
+			{
+				rbf.blocks[i] = materials[materialId];
+			}
+		}
+
+		blocksLength = buffer.get();
+		for(int i = 0; i < blocksLength; i++)
+		{
+			short metaDataNameId = buffer.getShort();
+			if(metaDataNameId != -1)
+			{
+				rbf.metaDataNames[i] = metaDataNames[metaDataNameId];
+			}
+			if(rbf.metaDataNames[i] != null)
+			{
+				// Get the file
+				NamedBinaryTag metaData = NBTHelper.loadMetadata(rbf.metaDataNames[i], file, logger);
+
+				if (metaData != null)
+				{
+					rbf.metaDataTags[i] = metaData;
+				} else {
+					rbf.metaDataNames[i] = null;
+				}
+			}
+		}
+
+		return rbf;
+	}
+
 	@Override
 	public Class<BO3Config> getHolderType()
 	{

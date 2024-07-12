@@ -87,7 +87,7 @@ public class Extractor
 							nbtFile.delete(); // Make sure there is no leftover file here from before
 							nbtFile.createNewFile(); // Make the new file
 							FileOutputStream stream = new FileOutputStream(nbtFile);
-							nbt.writeTo(stream); // Write the new file to disk
+							nbt.writeTo(stream, true); // Write the new file to disk
 							stream.flush();
 							stream.close();
 						}

@@ -1,5 +1,6 @@
 package com.pg85.otg.config.io;
 
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +32,19 @@ public final class NameTable
         }
     }
 
+    public static NameTable readFromStream(DataInput stream) throws IOException
+    {
+        NameTable table = new NameTable();
+
+        int numNames = stream.readInt();
+        for (int i = 0; i < numNames; i++)
+        {
+            table.settings.add(stream.readUTF());
+        }
+
+        return table;
+    }
+
     int getOrRegisterSettingId(String settingName)
     {
         if (!settings.contains(settingName))
@@ -38,5 +52,9 @@ public final class NameTable
             settings.add(settingName);
         }
         return settings.indexOf(settingName);
+    }
+
+    String getNameById(int id) {
+        return settings.get(id);
     }
 }

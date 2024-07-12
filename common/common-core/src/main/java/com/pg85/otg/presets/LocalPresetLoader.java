@@ -1,6 +1,9 @@
 package com.pg85.otg.presets;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
@@ -114,6 +117,23 @@ public abstract class LocalPresetLoader
 							this.aliasMap.put(preset.getShortPresetName(), preset.getFolderName());
 							break;
 						}
+					}
+				}
+				else if (presetDir.getName().endsWith(".preset")) {
+					try {
+						Preset preset = PackedPresetLoader.loadPresetFromPack(presetDir);
+						if (this.presets.containsKey(preset.getFolderName())) {
+							logger.log(LogLevel.WARN, LogCategory.MAIN, String.format("Multiple preset formats exist for %s, discarding packed preset in favor of original", preset.getShortPresetName()));
+							continue;
+						}
+						this.presets.put(preset.getFolderName(), preset);
+						this.aliasMap.put(preset.getShortPresetName(), preset.getFolderName());
+					} catch (Exception e) {
+						StringWriter sw = new StringWriter();
+						PrintWriter pw = new PrintWriter(sw);
+						e.printStackTrace(pw);
+						String stackTrace = sw.toString();
+						logger.log(LogLevel.ERROR, LogCategory.MAIN, String.format("Unable to load packed preset %s: %s", presetDir.getName(), stackTrace));
 					}
 				}
 			}

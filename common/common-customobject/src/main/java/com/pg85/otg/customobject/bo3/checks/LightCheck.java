@@ -6,6 +6,8 @@ import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IWorldGenRegion;
 
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.List;
 
 public class LightCheck extends BO3Check
@@ -42,6 +44,16 @@ public class LightCheck extends BO3Check
 	public String makeString()
 	{
 		return "LightCheck(" + x + ',' + y + ',' + z + ',' + minLightLevel + ',' + maxLightLevel + ')';
+	}
+
+	/**
+	 * Writes the light levels to a stream.
+	 */
+	public void writeLevelsToStream(DataOutput stream) throws IOException {
+		// Technically, the check allows 16, but Minecraft light levels only
+		// go up to 15, so hopefully nobody sets it to a higher level in
+		// their config.
+		stream.writeByte(this.minLightLevel | (this.maxLightLevel << 4));
 	}
 
 	@Override

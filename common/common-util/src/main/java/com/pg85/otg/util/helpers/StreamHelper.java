@@ -16,7 +16,7 @@ public class StreamHelper
 		stream.writeBoolean(value == null);
 		if(value != null)
 		{
-			byte[] bytes = (value == null ? "" : value).getBytes(StandardCharsets.UTF_8);
+			byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
 			stream.writeShort(bytes.length);
 			stream.write(bytes);
 		}

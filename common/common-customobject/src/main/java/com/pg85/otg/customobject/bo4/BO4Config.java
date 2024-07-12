@@ -5,6 +5,7 @@ import com.pg85.otg.constants.Constants;
 import com.pg85.otg.constants.SettingsEnums.ConfigMode;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.CustomObjectManager;
+import com.pg85.otg.customobject.bo3.bo3function.BO3BlockFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4BlockFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4BranchFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4EntityFunction;
@@ -42,10 +43,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 public class BO4Config extends CustomObjectConfigFile
@@ -1361,7 +1360,7 @@ public class BO4Config extends CustomObjectConfigFile
 	}
 
 	private int bo4DataVersion = 4;
-	void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, boolean strip) throws IOException
+	void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
 	{		
 		stream.writeInt(this.bo4DataVersion);
 		// Version 3 added fixedRotation
@@ -1370,20 +1369,15 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeInt(this.minimumSizeTop);
 		stream.writeInt(this.minimumSizeBottom);
 		stream.writeInt(this.minimumSizeLeft);
-		stream.writeInt(this.minimumSizeRight);		
+		stream.writeInt(this.minimumSizeRight);
 		stream.writeInt(this.minX);
 		stream.writeInt(this.maxX);
 		stream.writeInt(this.minY);
 		stream.writeInt(this.maxY);
 		stream.writeInt(this.minZ);
 		stream.writeInt(this.maxZ);
-		if (!strip) {
-			StreamHelper.writeStringToStream(stream, this.author);
-			StreamHelper.writeStringToStream(stream, this.description);
-		} else {
-			StreamHelper.writeStringToStream(stream, null);
-			StreamHelper.writeStringToStream(stream, null);
-		}
+		StreamHelper.writeStringToStream(stream, this.author);
+		StreamHelper.writeStringToStream(stream, this.description);
 		stream.writeByte(this.settingsMode.ordinal());
 		stream.writeInt(this.frequency);
 		stream.writeByte(this.spawnHeight.ordinal());
@@ -1430,149 +1424,181 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeBoolean(this.useCenterForHighestBlock);
 
 		stream.writeInt(this.branchesBO4.length);
-		for(BO4BranchFunction func : Arrays.asList(this.branchesBO4))
+		for(BO4BranchFunction func : this.branchesBO4)
 		{
-			if(func instanceof BO4WeightedBranchFunction)
-			{
-				stream.writeBoolean(true); // false For BO4BranchFunction, true for BO4WeightedBranchFunction
-			} else {
-				stream.writeBoolean(false); // false For BO4BranchFunction, true for BO4WeightedBranchFunction
-			}
+            // false For BO4BranchFunction, true for BO4WeightedBranchFunction
+            stream.writeBoolean(func instanceof BO4WeightedBranchFunction); // false For BO4BranchFunction, true for BO4WeightedBranchFunction
 			func.writeToStream(stream);
 		}
 		
 		stream.writeInt(this.entityDataBO4.length);
-		for(BO4EntityFunction func : Arrays.asList(this.entityDataBO4))
+		for(BO4EntityFunction func : this.entityDataBO4)
 		{
 			func.writeToStream(stream);
 		}
 
-		ArrayList<LocalMaterialData> materials = new ArrayList<LocalMaterialData>();
-		ArrayList<String> metaDataNames = new ArrayList<String>();
-		int randomBlockCount = 0;
-		int nonRandomBlockCount = 0;
 		BO4BlockFunction[] blocks = getBlocks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
-		for(BO4BlockFunction block : blocks)
-		{		
-			if(block instanceof BO4RandomBlockFunction)
-			{
-				randomBlockCount++;
-				for(LocalMaterialData material : ((BO4RandomBlockFunction)block).blocks)
-				{
-					if(!materials.contains(material))
-					{
-						materials.add(material);
-					} 
-				}
-			} else {
-				nonRandomBlockCount++;
-			}
-						
-			if(block.material != null && !materials.contains(block.material))
-			{
-				materials.add(block.material);
-			}			
-			if(block.nbtName != null && !metaDataNames.contains(block.nbtName))
-			{
-				metaDataNames.add(block.nbtName);
-			}
-		}
-		
-		String[] metaDataNamesArr = metaDataNames.toArray(new String[metaDataNames.size()]);
-		LocalMaterialData[] blocksArr = materials.toArray(new LocalMaterialData[materials.size()]);
-		
-		stream.writeShort(metaDataNamesArr.length);
-		for(int i = 0; i < metaDataNamesArr.length; i++)
-		{
-			StreamHelper.writeStringToStream(stream, metaDataNamesArr[i]);
-		}
-		
-		stream.writeShort(blocksArr.length);
-		for(int i = 0; i < blocksArr.length; i++)
-		{
-			StreamHelper.writeStringToStream(stream, blocksArr[i].getName());
-		}
-		
-		// TODO: This assumes that loading blocks in a different order won't matter, which may not be true?
-		// Anything that spawns on top, entities/spawners etc, should be spawned last tho, so shouldn't be a problem?
-		stream.writeInt(nonRandomBlockCount);
-		int nonRandomBlockIndex = 0;
-		ArrayList<BO4BlockFunction> blocksInColumn;
-		if(nonRandomBlockCount > 0)
-		{
-			for(int x = this.getminX(); x < xSize; x++)
-			{
-				for(int z = this.getminZ(); z < zSize; z++)
-				{
-					blocksInColumn = new ArrayList<BO4BlockFunction>();
-					for(BO4BlockFunction blockFunction : blocks)
-					{
-						if(!(blockFunction instanceof BO4RandomBlockFunction))
-						{
-							if(blockFunction.x == x && blockFunction.z == z)
-							{
-								blocksInColumn.add(blockFunction);
-							}
+		stream.writeBoolean(blocks.length > 0);  // hasBlocks
+		if (blocks.length > 0) {
+			ArrayList<LocalMaterialData> materials = new ArrayList<>();
+			ArrayList<String> metaDataNames = new ArrayList<>();
+			int randomBlockCount = 0;
+			for (BO4BlockFunction block : blocks) {
+				if (block instanceof BO4RandomBlockFunction) {
+					randomBlockCount++;
+					for (LocalMaterialData material : ((BO4RandomBlockFunction) block).blocks) {
+						if (!materials.contains(material)) {
+							materials.add(material);
 						}
 					}
-					stream.writeShort(blocksInColumn.size());
-					if(blocksInColumn.size() > 0)
-					{
-						for(BO4BlockFunction blockFunction : blocksInColumn)
-						{
-							blockFunction.writeToStream(metaDataNamesArr, blocksArr, stream);
-							nonRandomBlockIndex++;
-						}
-					}
-					if(nonRandomBlockIndex == nonRandomBlockCount)
-					{
-						break;
-					}
 				}
-				if(nonRandomBlockIndex == nonRandomBlockCount)
-				{
-					break;
-				}			
-			}
-		}
 
-		stream.writeInt(randomBlockCount);
-		int randomBlockIndex = 0;
-		if(randomBlockCount > 0)
-		{
-			for(int x = this.getminX(); x < xSize; x++)
-			{
-				for(int z = this.getminZ(); z < zSize; z++)
-				{
-					blocksInColumn = new ArrayList<BO4BlockFunction>();
-					for(BO4BlockFunction blockFunction : blocks)
-					{
-						if(blockFunction instanceof BO4RandomBlockFunction)
-						{
-							if(blockFunction.x == x && blockFunction.z == z)
-							{
-								blocksInColumn.add(blockFunction);
+				if (block.material != null && !materials.contains(block.material)) {
+					materials.add(block.material);
+				}
+				if (block.nbtName != null && !metaDataNames.contains(block.nbtName)) {
+					metaDataNames.add(block.nbtName);
+				}
+			}
+
+			metaDataNames.add(0, null);
+			materials.add(0, null);
+
+			String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
+			LocalMaterialData[] blocksArr = materials.toArray(new LocalMaterialData[0]);
+
+			stream.writeShort(blocksArr.length);
+			for (int i = 1; i < blocksArr.length; i++) {
+				StreamHelper.writeStringToStream(stream, blocksArr[i].getName());
+			}
+
+			int bitsPerBlock = 32 - Integer.numberOfLeadingZeros(blocksArr.length);
+
+
+			// TODO: This assumes that loading blocks in a different order won't matter, which may not be true?
+			// Anything that spawns on top, entities/spawners etc, should be spawned last tho, so shouldn't be a problem?
+
+			// TODO: is it possible to use values we already have?
+			int minX = Integer.MAX_VALUE;
+			int maxX = Integer.MIN_VALUE;
+			int minY = Integer.MAX_VALUE;
+			int maxY = Integer.MIN_VALUE;
+			int minZ = Integer.MAX_VALUE;
+			int maxZ = Integer.MIN_VALUE;
+			for (BO4BlockFunction block : blocks) {
+				if (block.x < minX) {
+					minX = block.x;
+				}
+				if (block.x > maxX) {
+					maxX = block.x;
+				}
+				if (block.y < minY) {
+					minY = block.y;
+				}
+				if (block.y > maxY) {
+					maxY = block.y;
+				}
+				if (block.z < minZ) {
+					minZ = block.z;
+				}
+				if (block.z > maxZ) {
+					maxZ = block.z;
+				}
+			}
+
+			maxX += 1;
+			maxY += 1;
+			maxZ += 1;
+
+			stream.writeShort(minX);
+			stream.writeShort(maxX);
+			stream.writeShort(minY);
+			stream.writeShort(maxY);
+			stream.writeShort(minZ);
+			stream.writeShort(maxZ);
+
+			// Convert the blocks to a 1-dimensional array
+//		int sizeX = xSize - this.getminX();
+			int sizeX = maxX - minX;
+			int sizeY = maxY - minY;
+//		int sizeZ = this.zSize - this.getminZ();
+			int sizeZ = maxZ - minZ;
+			List<BO4BlockFunction> blocksFlat = Arrays.asList(new BO4BlockFunction[sizeX * sizeY * sizeZ]);
+
+			for (BO4BlockFunction block : blocks) {
+				int normX = block.x - minX;
+				int normY = block.y - minY;
+				int normZ = block.z - minZ;
+				int idx = (normZ * sizeX * sizeY) + (normY * sizeX) + normX;
+//			System.out.printf("%d %d %d : %d%n", normX, normY, normZ, idx);
+				blocksFlat.set(idx, block);
+			}
+
+			// Pack them to the stream
+			long currentLong = 0;
+			int bitpos = 0;
+			for (BO4BlockFunction block : blocksFlat) {
+				int material = 0;
+				if (block != null) {
+					material = materials.indexOf(block.material);
+					if (material == -1) {
+						material = 0;  // 0 will always be null
+					}
+				}
+
+				currentLong |= ((long) material << bitpos);
+				bitpos += bitsPerBlock;
+				if ((bitpos + bitsPerBlock) >= 64) {  // will the next block overflow?
+					// write the long to the stream
+					stream.writeLong(currentLong);
+					// reset the state
+					bitpos = 0;
+					currentLong = 0;
+				}
+			}
+
+			// TODO: rewrite this for v4
+			stream.writeInt(randomBlockCount);
+			int randomBlockIndex = 0;
+			if (randomBlockCount > 0) {
+				for (int x = this.getminX(); x < xSize; x++) {
+					for (int z = this.getminZ(); z < zSize; z++) {
+						List<BO4BlockFunction> blocksInColumn = new ArrayList<>();
+						for (BO4BlockFunction blockFunction : blocks) {
+							if (blockFunction instanceof BO4RandomBlockFunction) {
+								if (blockFunction.x == x && blockFunction.z == z) {
+									blocksInColumn.add(blockFunction);
+								}
 							}
 						}
-					}
-					stream.writeShort(blocksInColumn.size());
-					if(blocksInColumn.size() > 0)
-					{
-						for(BO4BlockFunction blockFunction : blocksInColumn)
-						{
-							blockFunction.writeToStream(metaDataNamesArr, blocksArr, stream);
-							randomBlockIndex++;
+						stream.writeShort(blocksInColumn.size());
+						if (!blocksInColumn.isEmpty()) {
+							for (BO4BlockFunction blockFunction : blocksInColumn) {
+								blockFunction.writeToStream(metaDataNamesArr, blocksArr, stream);
+								randomBlockIndex++;
+							}
+						}
+						if (randomBlockIndex == randomBlockCount) {
+							break;
 						}
 					}
-					if(randomBlockIndex == randomBlockCount)
-					{
+					if (randomBlockIndex == randomBlockCount) {
 						break;
 					}
 				}
-				if(randomBlockIndex == randomBlockCount)
-				{
-					break;
-				}			
+			}
+
+			// Write NBT details
+			List<BO4BlockFunction> nbtBlocks = Arrays.stream(blocks)
+					.filter(b -> (b != null) && (b.nbtName != null))
+					.collect(Collectors.toList());
+
+			stream.writeInt(nbtBlocks.size());
+			for (BO4BlockFunction block : nbtBlocks) {
+				stream.writeShort(block.x);
+				stream.writeShort(block.y);
+				stream.writeShort(block.z);
+				stream.writeUTF(block.nbtName);
 			}
 		}
 	}

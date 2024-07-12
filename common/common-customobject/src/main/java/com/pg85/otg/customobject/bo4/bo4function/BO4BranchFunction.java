@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents the Branch(..) function in the BO3 files.
@@ -211,6 +212,11 @@ public class BO4BranchFunction extends BranchFunction<BO4Config>
 	public Class<BO4Config> getHolderType()
 	{
 		return BO4Config.class;
+	}
+
+	public List<String> getBranchObjectNames() {
+		return this.branchesBO4.stream().map(b -> b.customObjectName)
+				.collect(Collectors.toList());
 	}
 
 	public void writeToStream(DataOutput stream) throws IOException

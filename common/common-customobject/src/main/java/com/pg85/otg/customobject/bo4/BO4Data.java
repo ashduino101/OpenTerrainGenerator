@@ -24,13 +24,18 @@ public class BO4Data
 		return file.exists();
 	}
 
-	public static void generateBO4DataToStream(BO4Config config, DataOutputStream stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, boolean strip) {
+	public static void generateBO4DataToStream(BO4Config config, DataOutputStream stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, boolean compress) {
 		try {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			DataOutputStream dos = new DataOutputStream(bos);
-			config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker, strip);
-			byte[] compressedBytes = com.pg85.otg.util.CompressionUtils.compress(bos.toByteArray(), logger);
-			stream.write(compressedBytes, 0, compressedBytes.length);
+			config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
+			if (compress) {
+				byte[] compressedBytes = com.pg85.otg.util.CompressionUtils.compress(bos.toByteArray(), logger);
+				stream.write(compressedBytes, 0, compressedBytes.length);
+			} else {
+				byte[] result = bos.toByteArray();
+				stream.write(result, 0, result.length);
+			}
 		}
 		catch (IOException e)
 		{
@@ -54,7 +59,7 @@ public class BO4Data
 			try {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				DataOutputStream dos = new DataOutputStream(bos);
-				config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker, false);
+				config.writeToStream(dos, presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
 				byte[] compressedBytes = com.pg85.otg.util.CompressionUtils.compress(bos.toByteArray(), logger);
 				dos.close();
 				FileOutputStream fos = new FileOutputStream(file);

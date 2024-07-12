@@ -230,7 +230,7 @@ public class BO4RandomBlockFunction extends BO4BlockFunction
 			{
 				for(int j = 0; j < materials.length; j++)
 				{
-					if(materials[j].equals(this.blocks[i]))
+					if(materials[j] != null && materials[j].equals(this.blocks[i]))
 					{
 						stream.writeShort(j);
 						bFound = true;
@@ -264,7 +264,7 @@ public class BO4RandomBlockFunction extends BO4BlockFunction
 				{
 					for(int j = 0; j < metaDataNames.length; j++)
 					{
-						if(metaDataNames[j].equals(this.metaDataNames[i]))
+						if(metaDataNames[j] != null && metaDataNames[j].equals(this.metaDataNames[i]))
 						{
 							stream.writeShort(i);
 							bFound = true;
