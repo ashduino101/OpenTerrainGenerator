@@ -29,15 +29,13 @@ public final class PackedFileSettings
 
         Collection<RawSettingValue> settings = settingsMap.getRawSettings()
                 .stream()
-                .filter(e -> e.getType() != RawSettingValue.ValueType.PLAIN_SETTING && e.getType() != RawSettingValue.ValueType.FUNCTION)
+                .filter(e -> e.getType() == RawSettingValue.ValueType.PLAIN_SETTING ||
+                        e.getType() == RawSettingValue.ValueType.FUNCTION)
                 .collect(Collectors.toList());
 
         stream.writeInt(settings.size());
         for (RawSettingValue entry : settings)
         {
-            if (entry.getType() != RawSettingValue.ValueType.PLAIN_SETTING && entry.getType() != RawSettingValue.ValueType.FUNCTION) {
-                continue;
-            }
             packEntry(stream, entry, logger);
         }
     }
@@ -49,7 +47,8 @@ public final class PackedFileSettings
 
         Collection<RawSettingValue> settings = settingsMap.getRawSettings()
                 .stream()
-                .filter(e -> e.getType() != RawSettingValue.ValueType.PLAIN_SETTING && e.getType() != RawSettingValue.ValueType.FUNCTION)
+                .filter(e -> e.getType() == RawSettingValue.ValueType.PLAIN_SETTING ||
+                        e.getType() == RawSettingValue.ValueType.FUNCTION)
                 .collect(Collectors.toList());
 
         stream.writeInt(settings.size());
@@ -88,10 +87,10 @@ public final class PackedFileSettings
 
     private static void packEntry(DataOutput stream, RawSettingValue entry, ILogger logger, NameTable nameTable) throws IOException
     {
-        stream.writeByte(entry.getType().getId());
         switch (entry.getType())
         {
             case PLAIN_SETTING:
+                stream.writeByte(1);
                 String[] parsed = entry.getRawValue().split(":", 2);
                 if (parsed[0].trim().startsWith("#"))
                 {
@@ -114,6 +113,8 @@ public final class PackedFileSettings
                 String parameters = raw.substring(bracketIndex + 1, raw.length() - 1).trim();
                 List<String> args = Arrays.asList(StringHelper.readCommaSeperatedString(parameters));
                 int functionIndex = nameTable.getOrRegisterSettingId(functionName);
+
+                stream.writeByte(2);
                 stream.writeShort(functionIndex);
                 stream.writeShort(args.size());
                 for (String item : args)

@@ -6,6 +6,7 @@ import com.pg85.otg.config.io.NameTable;
 import com.pg85.otg.config.io.PackedFileSettings;
 import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.config.world.WorldConfig;
+import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.exceptions.InvalidConfigException;
 
 import java.io.*;
@@ -73,8 +74,7 @@ public class PackedPresetLoader
         channel.position(worldConfigOffset);
 
         SettingsMap worldConfigMap = PackedFileSettings.readFromStream(stream, OTG.getEngine().getLogger(), nameTable);
-        WorldConfig worldConfig = new WorldConfig(new File("<packed>").toPath(), worldConfigMap, new ArrayList<String>(biomeConfigOffsets.keySet()), OTG.getEngine().getBiomeResourceManager(), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(file.getName()), file.getName());
-
+        WorldConfig worldConfig = new WorldConfig(new File("<packed>").toPath(), worldConfigMap, new ArrayList<>(biomeConfigOffsets.keySet()), OTG.getEngine().getBiomeResourceManager(), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(file.getName()), file.getName());
         // Load biome configs
         ArrayList<BiomeConfig> biomeConfigs = new ArrayList<>();
         for (Map.Entry<String, Long> biomeConfigOffset : biomeConfigOffsets.entrySet()) {
@@ -85,6 +85,9 @@ public class PackedPresetLoader
             BiomeConfig biomeConfig = new BiomeConfig(biomeName, null, file.toPath(), biomeConfigMap, worldConfig, presetShortName, 1, OTG.getEngine().getBiomeResourceManager(), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(file.getName()));
             biomeConfigs.add(biomeConfig);
         }
+
+        // Load custom objects
+        ArrayList<CustomObject> objects = new ArrayList<>();
 
         // The file isn't a directory, but that should be fine
         return new Preset(new File(presetShortName).toPath(), presetShortName, worldConfig, biomeConfigs);
