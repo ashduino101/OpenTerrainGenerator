@@ -1,7 +1,7 @@
 plugins {
     id("parent-logic")
     id ("architectury-plugin") version "3.4-SNAPSHOT" apply false
-    id ("dev.architectury.loom") version "1.6-SNAPSHOT" apply false
+    id ("dev.architectury.loom") version "1.7-SNAPSHOT" apply false
 }
 
 defaultTasks = arrayListOf("build", "publishToMavenLocal")

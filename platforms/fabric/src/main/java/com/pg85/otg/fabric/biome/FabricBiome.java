@@ -3,6 +3,7 @@ package com.pg85.otg.fabric.biome;
 import com.pg85.otg.config.settings.biome.BiomeSettings;
 import com.pg85.otg.interfaces.IBiome;
 import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 

@@ -44,4 +44,12 @@ public class Color extends Number {
     public String toString() {
         return "0x" + Integer.toHexString(color | 0x1000000).substring(1).toUpperCase();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Color other) {
+            return this.color == other.color;
+        }
+        return false;
+    }
 }

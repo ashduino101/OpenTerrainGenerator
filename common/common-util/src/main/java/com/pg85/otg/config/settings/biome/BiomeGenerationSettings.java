@@ -92,7 +92,7 @@ public class BiomeGenerationSettings extends ConfigSection {
             "Rarity of this biome when spawned as an isle biome in BiomeMode: Normal."
     );
     public static final Setting<Color> BIOME_MAP_COLOR = Settings.colorSetting(
-            "BiomeMapColor", "#FFFFFF",
+            "BiomeMapColor", "0xFFFFFF",
             t -> ((BiomeGenerationSettings)t).getBiomeColor(),
             "The hexadecimal color value of this biome. Used in the output of the /otg map command,",
             "and used in the input of BiomeMode: FromImage."

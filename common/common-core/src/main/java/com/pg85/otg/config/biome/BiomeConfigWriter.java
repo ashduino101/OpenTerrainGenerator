@@ -265,7 +265,7 @@ public class BiomeConfigWriter {
                     "Values near 0 are more common than values near -1 and 1. This setting is",
                     "used to change the water color based on the noise value for the column.",
                     "Syntax: Color,MaxNoise,[AnotherColor,MaxNoise[,...]]",
-                    "Example: " + BiomeVisualSettings.WATER_COLOR_CONTROL + ": #FFFFFF,-0.8,#000000,0.0",
+                    "Example: " + BiomeVisualSettings.WATER_COLOR_CONTROL + ": 0xFFFFFF,-0.8,0x000000,0.0",
                     "  When the noise is below -0.8, the water will be white, between -0.8 and 0",
                     "  the water will be black, and above 0 the water will be the normal " + BiomeVisualSettings.WATER_COLOR + ".");
 

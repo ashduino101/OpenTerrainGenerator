@@ -56,7 +56,7 @@ public class BiomeVisualSettings extends ConfigSection {
     }
 
     public static final Setting<Color> SKY_COLOR = Settings.colorSetting(
-            "SkyColor", "#7BA5FF",
+            "SkyColor", "0x7BA5FF",
             t -> ((BiomeVisualSettings) t).getSkyColor(),
             "The color of the sky in this biome. Can be any hexadecimal color value."
     );
@@ -111,27 +111,27 @@ public class BiomeVisualSettings extends ConfigSection {
             "How far from the player a mood sound can play"
     );
     public static final Setting<Color> WATER_COLOR = Settings.colorSetting(
-            "WaterColor", "#FFFFFF",
+            "WaterColor", "0xFFFFFF",
             t -> ((BiomeVisualSettings) t).getWaterColor(),
             "The color of the water in this biome. Can be any hexadecimal color value."
     );
     public static final Setting<Color> GRASS_COLOR = Settings.colorSetting(
-            "GrassColor", "#FFFFFF",
+            "GrassColor", "0xFFFFFF",
             t -> ((BiomeVisualSettings) t).getGrassColor(),
             "The color of the grass in this biome. Can be any hexadecimal color value."
     );
     public static final Setting<Color> FOLIAGE_COLOR = Settings.colorSetting(
-            "FoliageColor", "#FFFFFF",
+            "FoliageColor", "0xFFFFFF",
             t -> ((BiomeVisualSettings) t).getFoliageColor(),
             "The color of the foliage in this biome. Can be any hexadecimal color value."
     );
     public static final Setting<Color> FOG_COLOR = Settings.colorSetting(
-            "FogColor", "#000000",
+            "FogColor", "0x000000",
             t -> ((BiomeVisualSettings) t).getFogColor(),
             "The color of the fog in this biome. Can be any hexadecimal color value."
     );
     public static final Setting<Color> WATER_FOG_COLOR = Settings.colorSetting(
-            "WaterFogColor", "#000000",
+            "WaterFogColor", "0x000000",
             t -> ((BiomeVisualSettings) t).getWaterFogColor(),
             "The color of the fog above water in this biome. Can be any hexadecimal color value."
     );
@@ -175,7 +175,7 @@ public class BiomeVisualSettings extends ConfigSection {
             "Values near 0 are more common than values near -1 and 1. This setting is",
             "used to change the water color based on the noise value for the column.",
             "Syntax: Color,MaxNoise,[AnotherColor,MaxNoise[,...]]",
-            "Example: " + BiomeVisualSettings.WATER_COLOR_CONTROL + ": #FFFFFF,-0.8,#000000,0.0",
+            "Example: " + BiomeVisualSettings.WATER_COLOR_CONTROL + ": 0xFFFFFF,-0.8,0x000000,0.0",
             "  When the noise is below -0.8, the water will be white, between -0.8 and 0",
             "  the water will be black, and above 0 the water will be the normal " + BiomeVisualSettings.WATER_COLOR + "."
     );
@@ -235,8 +235,8 @@ public class BiomeVisualSettings extends ConfigSection {
         {
             builder.fogDensity = 0.0f;
         }
-        Setting<String> LEGACY_GRASS_COLOR2 = Settings.stringSetting("GrassColor2", "#FFFFFF");
-        Setting<String> LEGACY_FOLIAGE_COLOR2 = Settings.stringSetting("FoliageColor2", "#FFFFFF");
+        Setting<String> LEGACY_GRASS_COLOR2 = Settings.stringSetting("GrassColor2", "0xFFFFFF");
+        Setting<String> LEGACY_FOLIAGE_COLOR2 = Settings.stringSetting("FoliageColor2", "0xFFFFFF");
         readLegacyColorSetting(reader, LEGACY_GRASS_COLOR2).ifPresent(set -> builder.grassColorControl = set);
         readLegacyColorSetting(reader, LEGACY_FOLIAGE_COLOR2).ifPresent(set -> builder.foliageColorControl = set);
 

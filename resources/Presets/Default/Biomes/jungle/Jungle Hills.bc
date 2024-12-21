@@ -22,7 +22,7 @@ BiomeSize: 4
 
 BiomeRarity: 100
 
-BiomeColor: #2C4205
+BiomeColor: 0x2C4205
 
 
 #######################################################################
@@ -140,27 +140,27 @@ UseFrozenOceanTemperature: false
 
 BiomeWetness: 0.9
 
-SkyColor: #7BA5FF
+SkyColor: 0x7BA5FF
 
-WaterColor: #FFFFFF
+WaterColor: 0xFFFFFF
 
 WaterColorControl: 
 
-GrassColor: #FFFFFF
+GrassColor: 0xFFFFFF
 
 GrassColorControl: 
 
 GrassColorModifier: None
 
-FoliageColor: #FFFFFF
+FoliageColor: 0xFFFFFF
 
 FoliageColorControl: 
 
-FogColor: #000000
+FogColor: 0x000000
 
 FogDensity: 0.0
 
-WaterFogColor: #000000
+WaterFogColor: 0x000000
 
 ParticleType: 
 
