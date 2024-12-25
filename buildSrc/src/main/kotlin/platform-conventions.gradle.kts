@@ -52,7 +52,7 @@ tasks {
     val copyPlatformJar = register<CopyFile>("copyPlatformJar") {
         sourceFile.set(otgPlatform.productionJar)
         destination.set(rootProject.layout.buildDirectory.dir("distributions").map {
-            it.file("OpenTerrainGenerator-${project.name.replaceFirstChar { it.uppercase() }}-${project.version}.jar")
+            it.file("OpenTerrainGenerator-${project.name.replaceFirstChar { it.uppercase() }}-${project.property("otg_version")}.jar")
         })
     }
 
