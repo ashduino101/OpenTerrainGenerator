@@ -77,8 +77,8 @@ public class GrassResource  extends BiomeResourceBase implements IBasicResource
 		if (random.nextDouble() * 100.0 <= this.rarity)
 		{
 			// Passed Rarity test, place about Frequency grass in this chunk
-			int centerX = worldGenregion.getDecorationArea().getChunkBeingDecoratedCenterX() + random.nextInt(Constants.CHUNK_SIZE);
-			int centerZ = worldGenregion.getDecorationArea().getChunkBeingDecoratedCenterZ() + random.nextInt(Constants.CHUNK_SIZE);
+			int centerX = worldGenregion.getDecorationArea().getChunkBeingDecoratedMinX() + random.nextInt(Constants.CHUNK_SIZE);
+			int centerZ = worldGenregion.getDecorationArea().getChunkBeingDecoratedMinZ() + random.nextInt(Constants.CHUNK_SIZE);
 			int centerY = worldGenregion.getHighestBlockAboveYAt(centerX, centerZ);
 			
 			if(centerY < Constants.WORLD_DEPTH)
@@ -146,8 +146,8 @@ public class GrassResource  extends BiomeResourceBase implements IBasicResource
 				continue;
 			}
 			
-			x = worldGenregion.getDecorationArea().getChunkBeingDecoratedCenterX() + random.nextInt(Constants.CHUNK_SIZE);
-			z = worldGenregion.getDecorationArea().getChunkBeingDecoratedCenterZ() + random.nextInt(Constants.CHUNK_SIZE);
+			x = worldGenregion.getDecorationArea().getChunkBeingDecoratedMinX() + random.nextInt(Constants.CHUNK_SIZE);
+			z = worldGenregion.getDecorationArea().getChunkBeingDecoratedMinZ() + random.nextInt(Constants.CHUNK_SIZE);
 			y = worldGenregion.getHighestBlockAboveYAt(x, z);
 
 			if(y < Constants.WORLD_DEPTH)

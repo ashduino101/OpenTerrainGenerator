@@ -11,13 +11,19 @@ public class DecorationArea
 	// in here for clarity for the moment, should clean that up when resources are 
 	// properly re-aligned.
 
+	// Structure reference: chunkstatus stage 1, can fetch 7x7
+	// Surface: chunkstatus stage 4, 3x3 is stage 3, can fetch 7x7
+	// Carver: chunkstatus stage 5, 3x3 is stage 3, can fetch 7x7
+	// Biome Decoration: chunkstatus stage 6, 3x3 is stage 6, can fetch 7x7
+	// Mobs: chunkstatus stage 9, can only fetch 1x1
+
 	public static final int DECORATION_OFFSET = 8;
 	public static final int CARVER_OFFSET = 8;
 	public static final int BO_CHUNK_CENTER_X = 8;
 	public static final int BO_CHUNK_CENTER_Z = 7;
 
-	private static final int WIDTH_IN_CHUNKS = 2;
-	private static final int HEIGHT_IN_CHUNKS = 2;
+	private static final int WIDTH_IN_CHUNKS = 3;
+	private static final int HEIGHT_IN_CHUNKS = 3;
 	public static final int WIDTH = WIDTH_IN_CHUNKS * Constants.CHUNK_SIZE;
 	public static final int HEIGHT = HEIGHT_IN_CHUNKS * Constants.CHUNK_SIZE;
 	
@@ -31,10 +37,10 @@ public class DecorationArea
 
 	public DecorationArea(ChunkCoordinate chunkBeingDecorated)
 	{
-		int top = 0;
+		int top = Constants.CHUNK_SIZE;
 		int right = Constants.CHUNK_SIZE;
 		int bottom = Constants.CHUNK_SIZE;
-		int left = 0;
+		int left = Constants.CHUNK_SIZE;
 		this.width = left + right + Constants.CHUNK_SIZE;
 		this.height = top + bottom + Constants.CHUNK_SIZE;
 		this.minX = chunkBeingDecorated.getBlockX() - left;
@@ -93,13 +99,13 @@ public class DecorationArea
 		return this.chunkBeingDecorated;
 	}
 
-	public int getChunkBeingDecoratedCenterX()
+	public int getChunkBeingDecoratedMinX()
 	{
-		return this.chunkBeingDecorated.getChunkX() * Constants.CHUNK_SIZE + DECORATION_OFFSET;
+		return this.chunkBeingDecorated.getChunkX() * Constants.CHUNK_SIZE;
 	}
 
-	public int getChunkBeingDecoratedCenterZ()
+	public int getChunkBeingDecoratedMinZ()
 	{
-		return this.chunkBeingDecorated.getChunkZ() * Constants.CHUNK_SIZE + DECORATION_OFFSET;
+		return this.chunkBeingDecorated.getChunkZ() * Constants.CHUNK_SIZE;
 	}
 }

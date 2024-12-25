@@ -74,8 +74,8 @@ public class SurfacePatchResource  extends BiomeResourceBase implements IBasicRe
 	@Override
 	public void spawnForChunkDecoration(IWorldGenRegion worldGenRegion, Random random)
 	{
-		int chunkX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX();
-		int chunkZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ();
+		int chunkX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX();
+		int chunkZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ();
 		int x;
 		int z;
 		for (int z0 = 0; z0 < Constants.CHUNK_SIZE; z0++)

@@ -35,6 +35,6 @@ public class DungeonResource extends FrequencyResourceBase
 	public void spawn(IWorldGenRegion world, Random random, int x, int z)
 	{
 		int y = RandomHelper.numberInRange(random, this.minAltitude, this.maxAltitude);
-		world.placeDungeon(random, world.getDecorationArea().getChunkBeingDecoratedCenterX(), y, world.getDecorationArea().getChunkBeingDecoratedCenterZ());		
+		world.placeDungeon(random, x, y, z);
 	}	
 }

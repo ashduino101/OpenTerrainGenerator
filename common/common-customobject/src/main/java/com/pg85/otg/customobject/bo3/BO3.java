@@ -249,8 +249,8 @@ public class BO3 implements StructuredCustomObject
 		boolean atLeastOneObjectHasSpawned = false;
 
 		// TODO: Remove this offset for 1.16?
-		int chunkMiddleX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX();
-		int chunkMiddleZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ();
+		int chunkMiddleX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX();
+		int chunkMiddleZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ();
 		int spawned = 0;
 		for (int i = 0; i < this.settings.frequency; i++)
 		{

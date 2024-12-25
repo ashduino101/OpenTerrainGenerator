@@ -9,6 +9,8 @@ import com.pg85.otg.constants.settings.ConfigMode;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Locale;
+
 @Builder
 @Getter
 public class PresetInfo extends ConfigSection {
@@ -63,7 +65,7 @@ public class PresetInfo extends ConfigSection {
     );
 
     public static PresetInfo buildPresetInfo(SettingsMap reader) {
-        var presetInfoBuilder = builder();
+        PresetInfoBuilder presetInfoBuilder = builder();
 
         presetInfoBuilder.settingsMode(reader.getSetting(SETTINGS_MODE));
         presetInfoBuilder.author(reader.getSetting(AUTHOR));
@@ -73,7 +75,19 @@ public class PresetInfo extends ConfigSection {
         presetInfoBuilder.minorVersion(reader.getSetting(MINOR_VERSION));
         presetInfoBuilder.selectableInWorldCreation(reader.getSetting(SELECTABLE_IN_WORLD_CREATION));
 
-        return presetInfoBuilder.build();
+        return presetInfoBuilder.fixSettings().build();
+    }
+
+    public static class PresetInfoBuilder {
+        private PresetInfoBuilder() {
+        }
+        public PresetInfoBuilder fixSettings() {
+            this.registryName = this.registryName
+                    .toLowerCase(Locale.ROOT)
+                    .replaceAll(" ", "_")
+                    .replaceAll("[^a-z0-9_\\-/.]", "");
+            return this;
+        }
     }
 
     @Override

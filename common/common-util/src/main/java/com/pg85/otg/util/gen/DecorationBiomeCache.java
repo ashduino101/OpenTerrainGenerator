@@ -14,8 +14,8 @@ public class DecorationBiomeCache
 
 	public DecorationBiomeCache(int startChunkX, int startChunkZ, ICachedBiomeProvider cachedBiomeProvider)
 	{
-		this.startX = startChunkX * Constants.CHUNK_SIZE;
-		this.startZ = startChunkZ * Constants.CHUNK_SIZE;
+		this.startX = startChunkX * Constants.CHUNK_SIZE - Constants.CHUNK_SIZE;
+		this.startZ = startChunkZ * Constants.CHUNK_SIZE - Constants.CHUNK_SIZE;
 		this.biomes = cachedBiomeProvider.getBiomesForChunks(ChunkCoordinate.fromBlockCoords(this.startX, this.startZ), DecorationArea.WIDTH);
 	}
 

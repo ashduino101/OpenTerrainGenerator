@@ -67,8 +67,8 @@ public class OreResource extends BiomeResourceBase implements IBasicResource
 		// Override spawnForChunkDecoration so we can add a cache.
 		
 		// TODO: Remove this offset for 1.16?
-		int chunkX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX();
-		int chunkZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ();		
+		int chunkX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX();
+		int chunkZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ();
 		int startX = worldGenRegion.getDecorationArea().getLeft();
 		int startZ = worldGenRegion.getDecorationArea().getTop();
 		int width = worldGenRegion.getDecorationArea().getWidth();

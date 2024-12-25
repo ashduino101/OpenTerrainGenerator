@@ -52,7 +52,6 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
     private final PresetConfig presetConfig;
     private final OTGWorldInfo otgWorldInfo;
     private final WorldGenLevel worldGenLevel;
-    private final ChunkAccess chunkAccess;
     private final OTGFabricChunkGenerator chunkGenerator;
     private final int MIN_RETURN_VALUE;
 
@@ -62,7 +61,6 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         this.presetConfig = presetConfig;
         this.otgWorldInfo = otgWorldInfo;
         this.worldGenLevel = worldGenLevel;
-        this.chunkAccess = chunkAccess;
         this.chunkGenerator = chunkGenerator;
         this.MIN_RETURN_VALUE = otgWorldInfo.minY() - 1;
     }
@@ -152,11 +150,11 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             return tree.map(
                     configuredFeature -> configuredFeature.place(worldGenLevel, chunkGenerator, worldGenLevel.getRandom(), pos))
                     .orElse(false);
-        } catch(NullPointerException ex) {
+        } catch(NullPointerException | IndexOutOfBoundsException ex) {
             if(OTGLog.getLogCategoryEnabled(LogCategory.DECORATION))
             {
                 OTGLog.log(LogLevel.ERROR, LogCategory.DECORATION, 
-                        String.format("Treegen caused an error: ", (Object[])ex.getStackTrace()));
+                        String.format("Treegen caused an error: %s", (Object[])ex.getStackTrace()));
             }
             // Return true to prevent further attempts.
             return true;
@@ -187,13 +185,13 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
 
     @Override
     public LocalMaterialData getMaterialDirect(int x, int y, int z) {
-        return FabricMaterialData.ofBlockState(this.chunkAccess.getBlockState(new BlockPos(x, y, z)));
+        return FabricMaterialData.ofBlockState(this.worldGenLevel.getBlockState(new BlockPos(x, y, z)));
     }
 
     @Override
     public int getBlockAboveLiquidHeight(int x, int z) {
         int highestY = getHighestBlockYAt(x, z, false, true, false, false, false);
-        if(highestY >= 0)
+        if(highestY > MIN_RETURN_VALUE)
         {
             return highestY + 1;
         } else {
@@ -204,7 +202,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
     @Override
     public int getBlockAboveSolidHeight(int x, int z) {
         int highestY = getHighestBlockYAt(x, z, true, false, true, true, false);
-        if(highestY >= 0)
+        if(highestY > MIN_RETURN_VALUE)
         {
             return highestY + 1;
         } else {
@@ -215,7 +213,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
     @Override
     public int getHighestBlockAboveYAt(int x, int z) {
         int highestY = getHighestBlockYAt(x, z, true, true, false, false, false);
-        if(highestY >= 0)
+        if(highestY > MIN_RETURN_VALUE)
         {
             return highestY + 1;
         } else {
@@ -230,12 +228,12 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             return MIN_RETURN_VALUE;
         }
 
-        int heightMapY = chunkAccess.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+        int heightMapY = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
 
-        return getHighestBlockYAt(chunkAccess, x, heightMapY, z, findSolid, findLiquid, ignoreLiquid, ignoreSnow, ignoreLeaves);
+        return getHighestBlockYAt(worldGenLevel, x, heightMapY, z, findSolid, findLiquid, ignoreLiquid, ignoreSnow, ignoreLeaves);
     }
 
-    protected int getHighestBlockYAt(ChunkAccess chunk, int internalX, int heightMapY, int internalZ, boolean findSolid, boolean findLiquid, boolean ignoreLiquid, boolean ignoreSnow, boolean ignoreLeaves) {
+    protected int getHighestBlockYAt(WorldGenLevel worldGenLevel, int internalX, int heightMapY, int internalZ, boolean findSolid, boolean findLiquid, boolean ignoreLiquid, boolean ignoreSnow, boolean ignoreLeaves) {
         LocalMaterialData material;
         boolean isSolid;
         boolean isLiquid;
@@ -243,7 +241,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         Block block;
 
         for(int i = heightMapY; i >= 0; i--) {
-            blockState = chunk.getBlockState(new BlockPos(internalX, i, internalZ));
+            blockState = worldGenLevel.getBlockState(new BlockPos(internalX, i, internalZ));
             block = blockState.getBlock();
             material = FabricMaterialData.ofBlockState(blockState);
             isLiquid = material.isLiquid();
@@ -298,13 +296,13 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             }
         }
 
-        // Can happen if this is a chunk filled with air
+        // Can happen if this is a worldGenLevel filled with air
         return MIN_RETURN_VALUE;
     }
 
     @Override
     public int getHeightMapHeight(int x, int z) {
-        return this.chunkAccess.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+        return this.worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
     }
 
     @Override
@@ -314,12 +312,15 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             return -1;
         }
 
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+
         // Check if the chunk has been lit, otherwise cancel.
-        if(chunkAccess.getStatus().isOrAfter(ChunkStatus.LIGHT))
+        if(worldGenLevel.getChunk(chunkX, chunkZ,ChunkStatus.LIGHT).getStatus().isOrAfter(ChunkStatus.LIGHT))
         {
             // Get the light level of the block state? Different from old behaviour
             // TODO: Check that this does not break in 1.20
-            return this.chunkAccess.getLightEmission(new BlockPos(x, y, z));
+            return this.worldGenLevel.getLightEmission(new BlockPos(x, y, z));
         }
         return -1;
     }
@@ -333,7 +334,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         {
             material = material.parseWithBiomeAndHeight(biomeConfig.biomeConfigsHaveReplacement(), biomeConfig.getSurfaceSettings().getReplacedBlocks(), y);
         }
-        this.chunkAccess.setBlockState(new BlockPos(x, y, z), ((FabricMaterialData)material).getState(), false);
+        this.worldGenLevel.setBlock(new BlockPos(x, y, z), ((FabricMaterialData)material).getState(), 18);
     }
 
     @Override
@@ -364,7 +365,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         BlockPos pos = new BlockPos(x, y, z);
         // Notify world: (2 | 16) == update client, don't update observers
         // Assuming false here means don't update observers
-        this.chunkAccess.setBlockState(pos, ((FabricMaterialData)material).getState(), false);
+        this.worldGenLevel.setBlock(pos, ((FabricMaterialData)material).getState(), 18);
 
         if (material.isLiquid())
         {
@@ -378,7 +379,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         }
 
         if (nbt != null) {
-            this.attachTag(x, y, z, nbt, chunkAccess.getBlockState(pos));
+            this.attachTag(x, y, z, nbt, worldGenLevel.getBlockState(pos));
         }
     }
 
@@ -389,7 +390,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         nms.put("y", IntTag.valueOf(y));
         nms.put("z", IntTag.valueOf(z));
 
-        BlockEntity tileEntity = this.chunkAccess.getBlockEntity(new BlockPos(x, y, z));
+        BlockEntity tileEntity = this.worldGenLevel.getBlockEntity(new BlockPos(x, y, z));
         if (tileEntity != null)
         {
             tileEntity.load(nms);
@@ -410,7 +411,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
     }
 
     public BlockEntity getBlockEntity(BlockPos blockPos) {
-        return this.chunkAccess.getBlockEntity(blockPos);
+        return this.worldGenLevel.getBlockEntity(blockPos);
     }
 
     @Override
@@ -548,7 +549,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             if (entity instanceof Monster monster)
             {
                 // If the block is a solid block or entity is a fish out of water, cancel
-                LocalMaterialData block = FabricMaterialData.ofBlockState(this.chunkAccess.getBlockState(new BlockPos((int) entityData.getX(), entityData.getY(), (int) entityData.getZ())));
+                LocalMaterialData block = FabricMaterialData.ofBlockState(this.worldGenLevel.getBlockState(new BlockPos((int) entityData.getX(), entityData.getY(), (int) entityData.getZ())));
                 if (
                         block.isSolid() ||
                                 (
@@ -583,7 +584,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
                                 MobSpawnType.CHUNK_GENERATION, 
                                 null, // TODO: Missing functionality in EntityFunction 
                                 nbtTagCompound);
-                this.chunkAccess.addEntity(monster);
+                this.worldGenLevel.addFreshEntity(monster);
             }
         }
     }
@@ -630,7 +631,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             //TODO: Returns null since we don't have shadow generation yet
             return null;
         }
-        return FabricMaterialData.ofBlockState(chunk.getBlockState(new BlockPos(x, y, z)));
+        return FabricMaterialData.ofBlockState(worldGenLevel.getBlockState(new BlockPos(x, y, z)));
     }
 
     @Override
@@ -648,7 +649,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
             return MIN_RETURN_VALUE;
         }
 
-        return getHighestBlockYAt(chunk, x, chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z), z, findSolid, findLiquid, ignoreLiquid, ignoreSnow, ignoreLeaves);
+        return getHighestBlockYAt(worldGenLevel, x, worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z), z, findSolid, findLiquid, ignoreLiquid, ignoreSnow, ignoreLeaves);
     }
 
     @Override

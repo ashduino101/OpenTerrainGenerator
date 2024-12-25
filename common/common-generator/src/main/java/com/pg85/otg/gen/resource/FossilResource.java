@@ -41,6 +41,6 @@ public final class FossilResource extends FrequencyResourceBase
 	public void spawn(IWorldGenRegion world, Random random, int x, int z)
 	{
 		int y = RandomHelper.numberInRange(random, this.minAltitude, this.maxAltitude);		
-		world.placeFossil(random, world.getDecorationArea().getChunkBeingDecoratedCenterX(), y, world.getDecorationArea().getChunkBeingDecoratedCenterZ());
+		world.placeFossil(random, x, y, z);
 	}
 }

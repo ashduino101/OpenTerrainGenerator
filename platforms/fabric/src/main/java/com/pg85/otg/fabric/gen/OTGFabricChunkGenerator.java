@@ -13,6 +13,7 @@ import com.pg85.otg.gen.OTGChunkGenerator;
 import com.pg85.otg.interfaces.IBiome;
 import com.pg85.otg.presets.Preset;
 import com.pg85.otg.util.ChunkCoordinate;
+import com.pg85.otg.util.OTGLog;
 import com.pg85.otg.util.gen.ChunkBuffer;
 import com.pg85.otg.util.gen.JigsawStructureData;
 import com.pg85.otg.util.gen.OTGWorldInfo;
@@ -29,10 +30,7 @@ import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.CarvingMask;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ProtoChunk;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.levelgen.*;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.carver.CarvingContext;
@@ -102,19 +100,19 @@ public class OTGFabricChunkGenerator extends ChunkGenerator {
         }
         // Do OTG resource decoration, then MC decoration for any non-OTG resources registered to this biome, then snow.
         ChunkCoordinate chunkBeingDecorated = getChunkCoordinate(worldGenLevel, chunkAccess);
-        FabricWorldGenRegion FabricChunkAccess = new FabricWorldGenRegion(this.preset.getFolderName(), OTG.getEngine().getPluginConfig(), this.preset.getPresetConfig(), otgWorldInfo, worldGenLevel, chunkAccess, this);
+        FabricWorldGenRegion fabricWorldGenRegion = new FabricWorldGenRegion(this.preset.getFolderName(), OTG.getEngine().getPluginConfig(), this.preset.getPresetConfig(), otgWorldInfo, worldGenLevel, chunkAccess, this);
         IBiome biome = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((chunkAccess.getPos().x << 2) + 2, (chunkAccess.getPos().z << 2) + 2);
 
         // World save folder name may not be identical to level name, fetch it.
         Path worldSaveFolder = worldGenLevel.getLevel().getServer().getWorldPath(LevelResource.PLAYER_DATA_DIR).getParent();
 
-        this.chunkDecorator.decorate(chunkBeingDecorated, FabricChunkAccess, biome.getBiomeSettings(), getStructureCache(worldSaveFolder));
+        this.chunkDecorator.decorate(chunkBeingDecorated, fabricWorldGenRegion, biome.getBiomeSettings(), getStructureCache(worldSaveFolder));
         super.applyBiomeDecoration(worldGenLevel, chunkAccess, structureManager);
 
         // Template biomes handle their own snow, OTG biomes use OTG snow.
         // TODO: Snow is handled per chunk, so this may cause some artifacts on biome borders.
         if(!biome.getBiomeSettings().getIsTemplateForBiome()) {
-            this.chunkDecorator.doSnowAndIce(FabricChunkAccess, chunkBeingDecorated);
+            this.chunkDecorator.doSnowAndIce(fabricWorldGenRegion, chunkBeingDecorated);
         }
 
     }

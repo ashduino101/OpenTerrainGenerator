@@ -80,9 +80,8 @@ public class TreeResource extends BiomeResourceBase implements ICustomObjectReso
 			{							
 				if (random.nextInt(100) < this.treeChances.get(treeNumber))
 				{
-					// TODO: Remove this offset for 1.16?
-					x = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX() + random.nextInt(Constants.CHUNK_SIZE);
-					z = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ() + random.nextInt(Constants.CHUNK_SIZE);					
+					x = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX() + random.nextInt(Constants.CHUNK_SIZE);
+					z = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ() + random.nextInt(Constants.CHUNK_SIZE);
 					
 					tree = this.treeObjects[treeNumber];
 					// Min/Max == -1 means use bo2/bo3 internal min/max height, otherwise use the optional min/max height defined with Tree()

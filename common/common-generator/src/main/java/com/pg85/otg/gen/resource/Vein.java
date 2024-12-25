@@ -55,9 +55,9 @@ class Vein
 		{
 			if (random.nextInt(100) < gen.oreRarity)
 			{
-				oreX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX() + random.nextInt(Constants.CHUNK_SIZE);
+				oreX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX() + random.nextInt(Constants.CHUNK_SIZE);
 				oreY = RandomHelper.numberInRange(random, gen.minAltitude, gen.maxAltitude);
-				oreZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ() + random.nextInt(Constants.CHUNK_SIZE);
+				oreZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ() + random.nextInt(Constants.CHUNK_SIZE);
 
 				if ((oreX - x) * (oreX - x) + (oreY - y) * (oreY - y) + (oreZ - z) * (oreZ - z) < sizeSquared)
 				{

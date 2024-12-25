@@ -26,8 +26,8 @@ public abstract class FrequencyResourceBase extends BiomeResourceBase implements
 	@Override
 	public void spawnForChunkDecoration(IWorldGenRegion worldGenRegion, Random random)
 	{
-		int blockX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX();
-		int blockZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ();		
+		int blockX = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX();
+		int blockZ = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ();
 
 		for (int t = 0; t < this.frequency; t++)
 		{

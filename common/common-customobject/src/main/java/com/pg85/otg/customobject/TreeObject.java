@@ -56,8 +56,8 @@ class TreeObject implements CustomObject
 	{
 		// A tree has no frequency or rarity, so spawn it once in the chunk
 		// Make sure we stay within decoration bounds.
-		int x = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterX() + random.nextInt(Constants.CHUNK_SIZE);
-		int z = worldGenRegion.getDecorationArea().getChunkBeingDecoratedCenterZ() + random.nextInt(Constants.CHUNK_SIZE);
+		int x = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinX() + random.nextInt(Constants.CHUNK_SIZE);
+		int z = worldGenRegion.getDecorationArea().getChunkBeingDecoratedMinZ() + random.nextInt(Constants.CHUNK_SIZE);
 		int y = worldGenRegion.getHighestBlockAboveYAt(x, z);
 		if (y < minHeight || y > maxHeight)
 		{
