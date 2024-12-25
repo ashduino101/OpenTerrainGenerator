@@ -38,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import java.util.*;
 
 @Mixin(RegistryDataLoader.class)
+@SuppressWarnings("unused") // Mixins are by nature unused
 public class RegistryLoaderMixin {
     // Explainer: The injector below needs to match:
     // 1. The method signature of the target method
@@ -54,6 +55,7 @@ public class RegistryLoaderMixin {
             ),
             locals = LocalCapture.CAPTURE_FAILHARD
     )
+    @SuppressWarnings("rawtypes") // Raw types required for this to work, not used in the code
     private static void loadOTGPresets(ResourceManager resourceManager, RegistryAccess registryAccess, List<RegistryDataLoader.RegistryData<?>> list,
                                        CallbackInfoReturnable ci, Map errorMap, List<Pair<WritableRegistry<?>, Object>> registries) {
         if (getRegistry(registries, Registries.DIMENSION) != null ) {
@@ -98,6 +100,12 @@ public class RegistryLoaderMixin {
     }
 
     private static void registerBiomes(List<Pair<WritableRegistry<?>, Object>> registries) {
+        if (OTG.getEngine().getPluginConfig().getDeveloperModeEnabled()) {
+            // clear all the caches
+            OTG.getEngine().getCustomObjectManager().reloadCustomObjectFiles();
+            OTG.getEngine().getPresetLoader().loadPresetsFromDisk();
+        }
+
         LegacyFabricBiomeLoader loader = (LegacyFabricBiomeLoader) OTG.getEngine().getPresetLoader();
         WritableRegistry<Biome> biomeWritableRegistry = getRegistry(registries, Registries.BIOME);
         if (biomeWritableRegistry == null) {
@@ -124,8 +132,8 @@ public class RegistryLoaderMixin {
         int counter = 0;
 
         Map<ResourceKey<LevelStem>, LevelStem> levelStems = new HashMap<>();
-        HolderGetter<DimensionType> dimensionHolders = getRegistry(registries, Registries.DIMENSION_TYPE).asLookup();
-        HolderGetter<NoiseGeneratorSettings> noiseHolders = getRegistry(registries, Registries.NOISE_SETTINGS).asLookup();
+        HolderGetter<DimensionType> dimensionHolders = getRegistryOrThrow(registries, Registries.DIMENSION_TYPE).asLookup();
+        HolderGetter<NoiseGeneratorSettings> noiseHolders = getRegistryOrThrow(registries, Registries.NOISE_SETTINGS).asLookup();
 
         for (String dim : dimensionNames) {
             ResourceKey<LevelStem> key;
@@ -195,15 +203,15 @@ public class RegistryLoaderMixin {
                 Optional<Holder.Reference<DimensionType>> dimensionTypeHolder = dimensionHolders.get(dimensionKey);
                 if (dimensionTypeHolder.isEmpty()) {
                     OTGLog.getLogger().error("Could not find dimension reference for dimension %s", dimensionKey.location());
-                    //continue;
+                    continue;
                 }
                 if (!dimensionTypeHolder.get().isBound()) {
                     OTGLog.getLogger().error("Dimension reference for dimension %s is not bound", dimensionKey.location());
-                    //continue;
+                    continue;
                 }
 
                 if (dimensionKey == BuiltinDimensionTypes.OVERWORLD) {
-                    Holder<MultiNoiseBiomeSourceParameterList> overworldBiomeSource = getRegistry(registries, Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST)
+                    Holder<MultiNoiseBiomeSourceParameterList> overworldBiomeSource = getRegistryOrThrow(registries, Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST)
                             .asLookup().getOrThrow(MultiNoiseBiomeSourceParameterLists.OVERWORLD);
                     if (!overworldBiomeSource.isBound()) {
                         OTGLog.getLogger().error("Overworld biome source is not bound");
@@ -215,7 +223,7 @@ public class RegistryLoaderMixin {
                             overworldNoise
                     );
                 } else if (dimensionKey == BuiltinDimensionTypes.NETHER) {
-                    Holder<MultiNoiseBiomeSourceParameterList> netherBiomeSource = getRegistry(registries, Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST)
+                    Holder<MultiNoiseBiomeSourceParameterList> netherBiomeSource = getRegistryOrThrow(registries, Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST)
                             .asLookup().getOrThrow(MultiNoiseBiomeSourceParameterLists.NETHER);
                     if (!netherBiomeSource.isBound()) {
                         OTGLog.getLogger().error("Nether biome source is not bound");
@@ -227,7 +235,7 @@ public class RegistryLoaderMixin {
                             netherNoise
                     );
                 } else if (dimensionKey == BuiltinDimensionTypes.END) {
-                    var biomes = getRegistry(registries, Registries.BIOME).asLookup();
+                    var biomes = getRegistryOrThrow(registries, Registries.BIOME).asLookup();
                     Holder<NoiseGeneratorSettings> endNoise = noiseHolders.getOrThrow(NoiseGeneratorSettings.END);
                     chunkGenerator = new NoiseBasedChunkGenerator(
                             TheEndBiomeSource.create(biomes),
@@ -271,7 +279,7 @@ public class RegistryLoaderMixin {
         OTGLog.getLogger().info("Registered world preset: " + key.location());
     }
 
-    private static Holder<NoiseGeneratorSettings> registerNoiseGenSettings(
+    private static void registerNoiseGenSettings(
             Preset preset,
             List<Pair<WritableRegistry<?>, Object>> registries,
             RegistryAccess registryAccess) {
@@ -299,7 +307,7 @@ public class RegistryLoaderMixin {
             throw new RuntimeException("Could not find noise settings registry");
         }
         ResourceKey<NoiseGeneratorSettings> key = ResourceKey.create(Registries.NOISE_SETTINGS, new ResourceLocation(Constants.MOD_ID_SHORT, preset.getPresetRegistryName()));
-        return registry.register(key, ngs, Lifecycle.stable());
+        registry.register(key, ngs, Lifecycle.stable());
     }
 
     private static @NotNull NoiseRouter getZeroNoiseRouter() {
@@ -336,7 +344,7 @@ public class RegistryLoaderMixin {
                     // create settings for OTG dimension
                     DimensionType dimensionType = getDimensionType(preset.getPresetConfig().getDimensionSettings());
                     // register the dimension
-                    WritableRegistry<DimensionType> dimensionTypes = getRegistry(list2, Registries.DIMENSION_TYPE);
+                    WritableRegistry<DimensionType> dimensionTypes = getRegistryOrThrow(list2, Registries.DIMENSION_TYPE);
                     dimensionTypes.register(dimensionTypeKey, dimensionType, Lifecycle.stable());
                     OTGLog.info("Registered dimension type: %s", dimensionTypeKey.location());
                     // return the key for use elsewhere
@@ -376,6 +384,14 @@ public class RegistryLoaderMixin {
                         settings.getMonsterSpawnLightLimit()
                 )
         );
+    }
+
+    private static <T> WritableRegistry<T> getRegistryOrThrow(List<Pair<WritableRegistry<?>, Object>> registries, ResourceKey<Registry<T>> key) {
+        WritableRegistry<T> registry = getRegistry(registries, key);
+        if (registry == null) {
+            throw new RuntimeException("Could not find registry for key " + key.location());
+        }
+        return registry;
     }
 
     @SuppressWarnings("unchecked")
