@@ -9,6 +9,7 @@ import com.pg85.otg.config.io.IConfigFunctionProvider;
 import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.config.settings.biome.*;
 import com.pg85.otg.config.preset.PresetConfig;
+import com.pg85.otg.constants.Constants;
 import com.pg85.otg.customobject.resource.CustomObjectResource;
 import com.pg85.otg.customobject.resource.CustomStructureResource;
 import com.pg85.otg.customobject.resource.SaplingResource;
@@ -17,7 +18,6 @@ import com.pg85.otg.gen.resource.*;
 import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.OTGMaterialReader;
 import com.pg85.otg.util.biome.OTGBiomeID;
-import com.pg85.otg.util.biome.OTGBiomeResourceLocation;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.minecraft.SaplingType;
 import lombok.Getter;
@@ -129,6 +129,7 @@ public class BiomeConfig extends BiomeSettings
 	}
 
 	public void writeConfigSettings(SettingsMap writer) {
+		writer.putSetting(Constants.ConfigVersionSetting, Constants.ConfigVersion);
 		BiomeConfigWriter.writeConfigSettings(this, writer);
 	}
 

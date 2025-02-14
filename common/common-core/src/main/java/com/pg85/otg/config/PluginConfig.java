@@ -3,6 +3,7 @@ package com.pg85.otg.config;
 import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.config.settings.preset.PresetInfo;
 import com.pg85.otg.config.standard.PluginConfigStandardValues;
+import com.pg85.otg.constants.Constants;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.util.OTGLog;
@@ -59,6 +60,7 @@ public final class PluginConfig extends PluginConfigBase
 	public void writeConfigSettings(SettingsMap writer)
 	{
 		writer.header1("Open Terrain Generator Config");
+		writer.putSetting(Constants.ConfigVersionSetting, Constants.ConfigVersion);
 
 		writer.putSetting(PresetInfo.SETTINGS_MODE, this.settingsMode,
 			"Possible Config Write Modes:",

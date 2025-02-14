@@ -72,18 +72,30 @@ public class TerrainSettings extends ConfigSection {
     );
 
     public static TerrainSettings getTerrainSettings(SettingsMap reader) {
-        var terrainSettingsBuilder = builder();
+        var builder = builder();
 
-        terrainSettingsBuilder.fractureHorizontal(reader.getSetting(FRACTURE_HORIZONTAL));
-        terrainSettingsBuilder.fractureVertical(reader.getSetting(FRACTURE_VERTICAL));
-        terrainSettingsBuilder.worldHeightCap(1 << reader.getSetting(WORLD_HEIGHT_CAP_BITS));
-        terrainSettingsBuilder.worldHeightScale(1 << reader.getSetting(WORLD_HEIGHT_SCALE_BITS));
-        terrainSettingsBuilder.betterSnowFall(reader.getSetting(BETTER_SNOW_FALL));
-        terrainSettingsBuilder.waterLevelMax(reader.getSetting(WATER_LEVEL_MAX));
-        terrainSettingsBuilder.waterLevelMin(reader.getSetting(WATER_LEVEL_MIN));
-        terrainSettingsBuilder.carverLavaBlockHeight(reader.getSetting(CARVER_LAVA_BLOCK_HEIGHT));
+        builder.fractureHorizontal(reader.getSetting(FRACTURE_HORIZONTAL));
+        builder.fractureVertical(reader.getSetting(FRACTURE_VERTICAL));
+        builder.worldHeightCap(1 << reader.getSetting(WORLD_HEIGHT_CAP_BITS));
+        builder.worldHeightScale(1 << reader.getSetting(WORLD_HEIGHT_SCALE_BITS));
+        builder.betterSnowFall(reader.getSetting(BETTER_SNOW_FALL));
+        builder.waterLevelMax(reader.getSetting(WATER_LEVEL_MAX));
+        builder.waterLevelMin(reader.getSetting(WATER_LEVEL_MIN));
+        builder.carverLavaBlockHeight(reader.getSetting(CARVER_LAVA_BLOCK_HEIGHT));
 
-        return terrainSettingsBuilder.fixSettings().build();
+        int configVersion = reader.getVersion();
+        if (configVersion < 2) {
+            // In older configs, the values were stored as negative values and then converted
+            // to positive values in the getter. This is no longer necessary.
+            builder.fractureHorizontal(builder.fractureHorizontal < 0.0D
+                    ? 1.0D / (Math.abs(builder.fractureHorizontal) + 1.0D)
+                    : builder.fractureHorizontal + 1.0D);
+            builder.fractureVertical(builder.fractureVertical < 0.0D
+                    ? 1.0D / (Math.abs(builder.fractureVertical) + 1.0D)
+                    : builder.fractureVertical + 1.0D);
+        }
+
+        return builder.fixSettings().build();
     }
 
     @Override
@@ -94,10 +106,22 @@ public class TerrainSettings extends ConfigSection {
     public static class TerrainSettingsBuilder {
         public TerrainSettingsBuilder fixSettings() {
             checkWaterLevelMax();
+            checkFractionHorizontal();
+            checkFractionVertical();
             return this;
         }
         private void checkWaterLevelMax() {
             waterLevelMax = Math.max(waterLevelMax, waterLevelMin);
+        }
+        private void checkFractionHorizontal() {
+            if (fractureHorizontal < 0) {
+                fractureHorizontal = 1.0D / Math.abs(fractureHorizontal);
+            }
+        }
+        private void checkFractionVertical() {
+            if (fractureVertical < 0) {
+                fractureVertical = 1.0D / Math.abs(fractureVertical);
+            }
         }
     }
 }

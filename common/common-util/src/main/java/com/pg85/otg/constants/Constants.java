@@ -31,8 +31,12 @@ public class Constants
 	public static final int ProtocolVersion = 6;
 
 	// Config constants
-
-	public static final int ConfigVersion = 2;
+	/*
+	Version 2:
+	Changed from positive/negative double to positive double:
+	- FractureHorizontal, FractionVertical, Volatility1, Volatility2
+	*/
+	public static final int ConfigVersion = 2; // Increment this when the config file format changes
 	public static final Setting<Integer> ConfigVersionSetting = Settings.intSetting("ConfigVersion", ConfigVersion, 0, Integer.MAX_VALUE);
 	
 	// Plugin Defaults

@@ -153,7 +153,19 @@ public class BiomeTerrainSettings extends ConfigSection {
             return heightMatrix;
         }
         public BiomeTerrainSettingsBuilder fixSettings() {
+            checkVolatility1();
+            checkVolatility2();
             return this;
+        }
+        private void checkVolatility1() {
+            if (this.volatility1 < 0.0D) {
+                this.volatility1 = 1.0D / (Math.abs(this.volatility1) + 1.0D);
+            }
+        }
+        private void checkVolatility2() {
+            if (this.volatility2 < 0.0D) {
+                this.volatility2 = 1.0D / (Math.abs(this.volatility2) + 1.0D);
+            }
         }
     }
 

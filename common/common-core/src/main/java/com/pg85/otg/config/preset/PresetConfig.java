@@ -8,6 +8,7 @@ import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.config.settingType.Setting;
 import com.pg85.otg.config.settingType.Settings;
 import com.pg85.otg.config.settings.preset.*;
+import com.pg85.otg.constants.Constants;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.util.OTGLog;
@@ -105,6 +106,7 @@ public class PresetConfig extends PresetSettings {
 
     @Override
     public void writeConfigSettings(SettingsMap writer) {
+        writer.putSetting(Constants.ConfigVersionSetting, Constants.ConfigVersion);
         PresetWriter.writePresetConfig(this, writer);
     }
 
