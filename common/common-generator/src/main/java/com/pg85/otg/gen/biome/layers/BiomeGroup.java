@@ -1,10 +1,8 @@
 package com.pg85.otg.gen.biome.layers;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.pg85.otg.constants.Constants;
 import com.pg85.otg.gen.biome.BiomeData;
 
 /**

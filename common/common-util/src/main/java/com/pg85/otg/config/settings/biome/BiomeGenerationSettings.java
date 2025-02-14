@@ -165,19 +165,19 @@ public class BiomeGenerationSettings extends ConfigSection {
             return this;
         }
         private void checkBiomeSize() {
-            biomeSize = Math.max(biomeSize, this.parent.getGenerationDepth());
+            biomeSize = Math.min(biomeSize, this.parent.getGenerationDepth());
         }
         private void checkBiomeSizeWhenIsle() {
-            biomeSizeWhenIsle = Math.max(biomeSizeWhenIsle, this.parent.getGenerationDepth());
+            biomeSizeWhenIsle = Math.min(biomeSizeWhenIsle, this.parent.getGenerationDepth());
         }
         private void checkBiomeSizeWhenBorder() {
-            biomeSizeWhenBorder = Math.max(biomeSizeWhenBorder, this.parent.getGenerationDepth());
+            biomeSizeWhenBorder = Math.min(biomeSizeWhenBorder, this.parent.getGenerationDepth());
         }
         private void checkBiomeRarity() {
-            biomeRarity = Math.max(biomeRarity, this.parent.getBiomeRarityScale());
+            biomeRarity = Math.min(biomeRarity, this.parent.getBiomeRarityScale());
         }
         private void checkBiomeRarityWhenIsle() {
-            biomeRarityWhenIsle = Math.max(biomeRarityWhenIsle, this.parent.getBiomeRarityScale());
+            biomeRarityWhenIsle = Math.min(biomeRarityWhenIsle, this.parent.getBiomeRarityScale());
         }
         private void checkIsleInBiomes() {
             var output = ConfigFile.filterBiomes(isleInBiomes, this.parent.getWorldBiomes());

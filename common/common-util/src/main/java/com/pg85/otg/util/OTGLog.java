@@ -76,7 +76,6 @@ public final class OTGLog {
 
         @Override
         public void init(LogLevel level, boolean logCustomObjects, boolean logStructurePlotting, boolean logConfigs, boolean logPerformance, boolean logBiomeRegistry, boolean logDecoration, boolean logMobs, String logPresets) {
-
             this.level = level;
             this.logCustomObjects = logCustomObjects;
             this.logStructurePlotting = logStructurePlotting;
@@ -121,14 +120,18 @@ public final class OTGLog {
         @Override
         public void log(LogLevel level, LogCategory category, String message) {
             if (this.level.ordinal() <= level.ordinal()) {
-                System.out.println(level.name() + " " + category.name() + " " + message);
+                if (this.level.ordinal() >= LogLevel.WARN.ordinal()) {
+                    System.out.println(level.name() + " " + category.name() + " " + message);
+                } else {
+                    System.err.println(level.name() + " " + category.name() + " " + message);
+                }
             }
         }
 
         @Override
         public void printStackTrace(LogLevel marker, LogCategory category, Exception e) {
             if (this.level.ordinal() <= marker.ordinal()) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
 

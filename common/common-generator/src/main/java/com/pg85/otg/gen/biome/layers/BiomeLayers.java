@@ -151,7 +151,7 @@ public class BiomeLayers
 				}
 
 				List<BiomeData> isleBiomes = data.isleBiomesAtDepth.get(depth);
-				if(isleBiomes != null && isleBiomes.size() > 0)
+				if(isleBiomes != null && !isleBiomes.isEmpty())
 				{
 					BiomeIsleLayer.IslesList islesAtCurrentDepth = new BiomeIsleLayer.IslesList();
 					for (BiomeData biome : isleBiomes)
@@ -174,7 +174,7 @@ public class BiomeLayers
 				}
 				
 				List<BiomeData> borderBiomes = data.borderBiomesAtDepth.get(depth);
-				if(borderBiomes != null && borderBiomes.size() > 0)
+				if(borderBiomes != null && !borderBiomes.isEmpty())
 				{
 					BiomeBorderLayer.BordersList bordersAtCurrentDepth = new BiomeBorderLayer.BordersList();
 					for (BiomeData biome : borderBiomes)
