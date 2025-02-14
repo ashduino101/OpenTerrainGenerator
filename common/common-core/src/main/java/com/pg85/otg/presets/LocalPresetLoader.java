@@ -200,15 +200,12 @@ public abstract class LocalPresetLoader
 		return biomeConfigs;
 	}
 
-	private ArrayList<BiomeConfig> readAndWriteSettings(PresetConfig presetConfig, Map<String, SettingsMap> biomeConfigStubs, IConfigFunctionProvider biomeResourcesManager)
+	private ArrayList<BiomeConfig> readAndWriteSettings(PresetConfig presetConfig, Map<String, SettingsMap> biomeSettingsMaps, IConfigFunctionProvider biomeResourcesManager)
 	{
 		ArrayList<BiomeConfig> biomeConfigs = new ArrayList<BiomeConfig>();
 
-		for (SettingsMap settingsMap : biomeConfigStubs.values())
+		for (SettingsMap settingsMap : biomeSettingsMaps.values())
 		{
-			// Inheritance
-			//processMobInheritance(biomeConfigStubs, settingsMap, 0, OTGLog.getLogger());
-
 			// Settings reading
 			BiomeConfig biomeConfig = new BiomeConfig(settingsMap, presetConfig, biomeResourcesManager);
 			//BiomeConfig biomeConfig = new BiomeConfig(settingsMap.getBiomeName(), settingsMap, presetDir, settingsMap.getSettings(), presetConfig, presetShortName, presetMajorVersion, biomeResourcesManager, logger, materialReader);
@@ -243,8 +240,10 @@ public abstract class LocalPresetLoader
 			}
 		}
 	}
-
+	
 	public abstract IBiome[] getGlobalIdMapping(String presetFolderName);
 
 	public abstract Map<String, BiomeLayerData> getPresetGenerationData();
+
+
 }

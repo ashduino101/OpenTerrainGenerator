@@ -76,6 +76,9 @@ public class BiomeConfig extends BiomeSettings
 	private final Path path;
 	private final PresetConfig parent;
 	private OTGBiomeID otgBiomeID;
+	@Getter
+	@Setter
+	private MobSettings mergedMobSettings = null;
 
 	public BiomeConfig(SettingsMap settingsMap, PresetConfig presetSettings, IConfigFunctionProvider biomeResourcesManager)
 	{

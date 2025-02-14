@@ -11,6 +11,7 @@ import com.pg85.otg.config.ConfigFunction;
 import com.pg85.otg.config.biome.BiomeConfig;
 import com.pg85.otg.config.biome.BiomeGroupFunction;
 import com.pg85.otg.config.settings.biome.BiomeVisualSettings;
+import com.pg85.otg.config.settings.biome.MobSettings;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.gen.biome.BiomeData;
 import com.pg85.otg.gen.biome.layers.BiomeLayerData;
@@ -160,6 +161,8 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
 
         List<BiomeConfig> biomeConfigs = preset.getBiomeConfigList();
 
+        MobInheritanceHandler.handleMobInheritance(biomeRegistry, biomeConfigs);
+
         Map<Integer, List<BiomeData>> isleBiomesAtDepth = new HashMap<>();
         Map<Integer, List<BiomeData>> borderBiomesAtDepth = new HashMap<>();
 
@@ -188,7 +191,7 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
         for(Entry<IBiomeResourceLocation, BiomeConfig> biomeConfigEntry : biomeConfigsByResourceLocation.entrySet())
         {
             IBiomeResourceLocation iBiomeResourceLocation = biomeConfigEntry.getKey();
-            BiomeSettings biomeConfig = biomeConfigEntry.getValue();
+            BiomeConfig biomeConfig = biomeConfigEntry.getValue();
             boolean isOceanBiome = false;
             // Biome id 0 is reserved for ocean, used when a land column has 
             // no biome assigned, which can happen due to biome group rarity.
@@ -250,9 +253,7 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
                 });
 
                 biome = LegacyFabricBiomeLoader.createOTGBiome(isOceanBiome, preset.getPresetConfig(), biomeConfig, featureHolder, carverHolder);
-                /*if (refresh) {
-                    biomeRegistry.registerMapping(0, resourceKey, biome, Lifecycle.stable());
-                }*/
+
                 ref = biomeRegistry.register(resourceKey, biome, Lifecycle.stable());
             }
             presetBiomes.add(resourceKey);
@@ -368,7 +369,7 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
         this.presetGenerationData.put(preset.getFolderName(), data);
     }
 
-    public static Biome createOTGBiome(boolean isOceanBiome, PresetSettings presetConfig, BiomeSettings biomeConfig, HolderGetter<PlacedFeature> featureHolderGetter, HolderGetter<ConfiguredWorldCarver<?>> carverHolderGetter) {
+    public static Biome createOTGBiome(boolean isOceanBiome, PresetSettings presetConfig, BiomeConfig biomeConfig, HolderGetter<PlacedFeature> featureHolderGetter, HolderGetter<ConfiguredWorldCarver<?>> carverHolderGetter) {
 
         BiomeGenerationSettings.Builder generationSettings = new BiomeGenerationSettings.Builder(featureHolderGetter, carverHolderGetter);
 
@@ -518,15 +519,17 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
     }
 
 
-    private static MobSpawnSettings.Builder createMobSpawnSettings(BiomeSettings biomeConfig)
-    {
+    private static MobSpawnSettings.Builder createMobSpawnSettings(BiomeConfig biomeConfig) {
+        MobSettings mobSettings = biomeConfig.getMergedMobSettings();
+        String biomeName = biomeConfig.getIdentitySettings().getBiomeName();
         MobSpawnSettings.Builder mobSpawnInfoBuilder = new MobSpawnSettings.Builder();
-        addMobGroup(MobCategory.MONSTER, mobSpawnInfoBuilder, biomeConfig.getMobSettings().getMonsters(), biomeConfig.getIdentitySettings().getBiomeName());
-        addMobGroup(MobCategory.CREATURE, mobSpawnInfoBuilder, biomeConfig.getMobSettings().getCreatures(), biomeConfig.getIdentitySettings().getBiomeName());
-        addMobGroup(MobCategory.WATER_CREATURE, mobSpawnInfoBuilder, biomeConfig.getMobSettings().getWaterCreatures(), biomeConfig.getIdentitySettings().getBiomeName());
-        addMobGroup(MobCategory.AMBIENT, mobSpawnInfoBuilder, biomeConfig.getMobSettings().getAmbientCreatures(), biomeConfig.getIdentitySettings().getBiomeName());
-        addMobGroup(MobCategory.WATER_AMBIENT, mobSpawnInfoBuilder, biomeConfig.getMobSettings().getWaterAmbientCreatures(), biomeConfig.getIdentitySettings().getBiomeName());
-        addMobGroup(MobCategory.MISC, mobSpawnInfoBuilder, biomeConfig.getMobSettings().getMiscCreatures(), biomeConfig.getIdentitySettings().getBiomeName());
+
+        addMobGroup(MobCategory.MONSTER, mobSpawnInfoBuilder, mobSettings.getMonsters(), biomeName);
+        addMobGroup(MobCategory.CREATURE, mobSpawnInfoBuilder, mobSettings.getCreatures(), biomeName);
+        addMobGroup(MobCategory.WATER_CREATURE, mobSpawnInfoBuilder, mobSettings.getWaterCreatures(), biomeName);
+        addMobGroup(MobCategory.AMBIENT, mobSpawnInfoBuilder, mobSettings.getAmbientCreatures(), biomeName);
+        addMobGroup(MobCategory.WATER_AMBIENT, mobSpawnInfoBuilder, mobSettings.getWaterAmbientCreatures(), biomeName);
+        addMobGroup(MobCategory.MISC, mobSpawnInfoBuilder, mobSettings.getMiscCreatures(), biomeName);
         return mobSpawnInfoBuilder;
     }
 
