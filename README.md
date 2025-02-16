@@ -19,9 +19,9 @@
     <a href="https://openterraingen.fandom.com"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://www.openterraingenerator.org/presets.html">See Our Presets</a>
+    <a href="https://openterraingen.fandom.com/wiki/OTG_Presets">See Our Presets</a>
     ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Report Bugs</a>
+    <a href="https://github.com/PG85/OpenTerrainGenerator/issues">Report Bugs</a>
     ·
     <a href="https://discord.gg/YY2NECCBYN">Join our Discord</a>
   </p>
@@ -66,9 +66,9 @@ You will **NOT** get official support for dev builds, and they may break. Please
 
 ## Links
 * [CurseForge](https://minecraft.curseforge.com/projects/open-terrain-generator)
-* [Wiki](http://openterraingen.wikia.com/wiki/Open_Terrain_Generator_Wiki)
+* [Wiki](https://openterraingen.fandom.com/wiki/Home)
 * [Discord](https://discord.com/invite/UXzdVTH)
-* [Installation](https://openterraingen.fandom.com/wiki/Installing_OTG) for Spigot and Forge
+* [Installation](https://openterraingen.fandom.com/wiki/Installation) for Spigot and Forge
 
 ## Original developers
 
