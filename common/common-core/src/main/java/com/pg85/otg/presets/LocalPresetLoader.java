@@ -119,6 +119,9 @@ public abstract class LocalPresetLoader
 	protected Preset loadPreset(Path presetDir)
 	{
 		File presetConfigFile = new File(presetDir.toString(), Constants.PRESET_CONFIG_FILE);
+		if (!presetConfigFile.exists()) {
+			presetConfigFile = new File(presetDir.toString(), Constants.LEGACY_WORLD_CONFIG_FILE);
+		}
 		File biomesDirectory = new File(presetDir.toString(), Constants.BIOMES_FOLDER);
 		if(!biomesDirectory.exists())
 		{

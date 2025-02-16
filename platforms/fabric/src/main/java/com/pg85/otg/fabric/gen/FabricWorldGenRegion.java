@@ -316,7 +316,7 @@ public class FabricWorldGenRegion extends LocalWorldGenRegion {
         int chunkZ = z >> 4;
 
         // Check if the chunk has been lit, otherwise cancel.
-        if(worldGenLevel.getChunk(chunkX, chunkZ,ChunkStatus.LIGHT).getStatus().isOrAfter(ChunkStatus.LIGHT))
+        if(worldGenLevel.getChunk(chunkX, chunkZ).getStatus().isOrAfter(ChunkStatus.LIGHT))
         {
             // Get the light level of the block state? Different from old behaviour
             // TODO: Check that this does not break in 1.20

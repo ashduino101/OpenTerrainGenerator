@@ -68,7 +68,7 @@ public class SurfaceSettings extends ConfigSection {
             "The block used for the surface"
     );
     public static final Setting<LocalMaterialData> UNDER_WATER_SURFACE_BLOCK = new MaterialSetting(
-            "UnderWaterSurfaceBlock", "",
+            "UnderWaterSurfaceBlock", LocalMaterials.DIRT_NAME,
             t -> ((SurfaceSettings)t).getUnderWaterSurfaceBlock(),
             "The block used for the surface in the biome when under water."
     );
@@ -164,6 +164,9 @@ public class SurfaceSettings extends ConfigSection {
     public static class SurfaceSettingsBuilder {
         public SurfaceSettingsBuilder fixSettings() {
             checkWaterLevelMax();
+            if (this.underWaterSurfaceBlock == null) {
+                this.underWaterSurfaceBlock = this.surfaceBlock;
+            }
             return this;
         }
         public void checkWaterLevelMax() {

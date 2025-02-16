@@ -35,7 +35,7 @@ public class MobInheritanceHandler {
             try {
                 handler.handleMobInheritance(biomeConfig);
             } catch (InvalidConfigException e) {
-                OTGLog.error("Error while handling mob inheritance for biome " + biomeConfig.getIdentitySettings().getBiomeName() + ": " + e.getMessage());
+                OTGLog.error(LogCategory.CONFIGS, "Error while handling mob inheritance for biome " + biomeConfig.getIdentitySettings().getBiomeName() + ": " + e.getMessage());
             }
         }
     }
@@ -54,7 +54,6 @@ public class MobInheritanceHandler {
         MobSettings parent;
 
         if (parentName.startsWith("otg:") || !parentName.contains(":")) {
-            parentName = parentName.substring(4);
             parent = getOTGMobSettings(biomeConfig, parentName);
         } else {
             parent = getVanillaMobSettings(biomeConfig, parentName);
@@ -67,23 +66,23 @@ public class MobInheritanceHandler {
 
         biomeConfig.setMergedMobSettings(
                 MobSettings.builder()
-                        .monsters(combine(child.getMonsters(), parent.getMonsters()))
-                        .creatures(combine(child.getCreatures(), parent.getCreatures()))
-                        .waterCreatures(combine(child.getWaterCreatures(), parent.getWaterCreatures()))
-                        .ambientCreatures(combine(child.getAmbientCreatures(), parent.getAmbientCreatures()))
-                        .waterAmbientCreatures(combine(child.getWaterAmbientCreatures(), parent.getWaterAmbientCreatures()))
-                        .miscCreatures(combine(child.getMiscCreatures(), parent.getMiscCreatures()))
+                        .monsters(combine("monster", child.getMonsters(), parent.getMonsters()))
+                        .creatures(combine("creature", child.getCreatures(), parent.getCreatures()))
+                        .waterCreatures(combine("water creature", child.getWaterCreatures(), parent.getWaterCreatures()))
+                        .ambientCreatures(combine("ambient creature", child.getAmbientCreatures(), parent.getAmbientCreatures()))
+                        .waterAmbientCreatures(combine("water ambient creature", child.getWaterAmbientCreatures(), parent.getWaterAmbientCreatures()))
+                        .miscCreatures(combine("misc creatures", child.getMiscCreatures(), parent.getMiscCreatures()))
                         .build()
         );
 
     }
 
-    private List<WeightedMobSpawnGroup> combine(List<WeightedMobSpawnGroup> child, List<WeightedMobSpawnGroup> parent) {
+    private List<WeightedMobSpawnGroup> combine(String type, List<WeightedMobSpawnGroup> child, List<WeightedMobSpawnGroup> parent) {
         List<WeightedMobSpawnGroup> combined = new ArrayList<>();
         combined.addAll(child);
         combined.addAll(parent);
         if (combined.isEmpty()) {
-            OTGLog.info(LogCategory.CONFIGS, "No mobs found for biome " + inheritanceChain.get(inheritanceChain.size() - 1));
+            OTGLog.info(LogCategory.CONFIGS, "No " + type + " spawn data found for biome " + inheritanceChain.get(inheritanceChain.size() - 1));
         }
         return combined;
     }
@@ -91,7 +90,7 @@ public class MobInheritanceHandler {
     private MobSettings getOTGMobSettings(BiomeConfig biomeConfig, String parentName) throws InvalidConfigException {
         BiomeConfig parent = biomeConfigs.stream().filter(b -> b.getIdentitySettings().getBiomeName().equals(parentName)).findFirst().orElse(null);
         if (parent == null) {
-            parent = biomeConfigs.stream().filter(b -> b.getRegistryKey().toResourceLocationString().equalsIgnoreCase("otg:"+parentName)).findFirst().orElse(null);
+            parent = biomeConfigs.stream().filter(b -> b.getRegistryKey().toResourceLocationString().equalsIgnoreCase(parentName)).findFirst().orElse(null);
         }
         if (parent == null) {
             OTGLog.error("Parent biome " + parentName + " not found for biome " + biomeConfig.getIdentitySettings().getBiomeName());

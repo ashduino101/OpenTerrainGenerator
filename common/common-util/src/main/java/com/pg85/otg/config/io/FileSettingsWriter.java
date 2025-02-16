@@ -40,6 +40,12 @@ public final class FileSettingsWriter
 		if (configMode == ConfigMode.WriteDisable)
 		{
 			return;
+		} else {
+			OTGLog.getLogger().log(
+				LogLevel.INFO,
+				LogCategory.CONFIGS,
+				String.format("Writing to file " + file + " with configMode " + configMode)
+			);
 		}
 
 		boolean writeComments = configMode != ConfigMode.WriteWithoutComments;

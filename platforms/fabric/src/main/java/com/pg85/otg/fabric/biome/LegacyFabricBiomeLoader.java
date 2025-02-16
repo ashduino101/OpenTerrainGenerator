@@ -161,8 +161,6 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
 
         List<BiomeConfig> biomeConfigs = preset.getBiomeConfigList();
 
-        MobInheritanceHandler.handleMobInheritance(biomeRegistry, biomeConfigs);
-
         Map<Integer, List<BiomeData>> isleBiomesAtDepth = new HashMap<>();
         Map<Integer, List<BiomeData>> borderBiomesAtDepth = new HashMap<>();
 
@@ -182,10 +180,13 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
             {
                 // Normal OTG biome, not a template biome.
                 IBiomeResourceLocation otgLocation = new OTGBiomeResourceLocation(preset.getPresetFolder(), preset.getPresetRegistryName(), preset.getMajorVersion(), biomeConfig.getIdentitySettings().getBiomeName());
+                biomeConfig.setRegistryKey(otgLocation);
                 biomeConfigsByResourceLocation.put(otgLocation, biomeConfig);
                 biomeConfigsByName.put(biomeConfig.getIdentitySettings().getBiomeName(), biomeConfig);
             }
         }
+
+        MobInheritanceHandler.handleMobInheritance(biomeRegistry, biomeConfigs);
 
         IBiome[] presetIdMapping = new IBiome[biomeConfigsByResourceLocation.entrySet().size()];
         for(Entry<IBiomeResourceLocation, BiomeConfig> biomeConfigEntry : biomeConfigsByResourceLocation.entrySet())
@@ -257,7 +258,6 @@ public class LegacyFabricBiomeLoader extends LocalPresetLoader {
                 ref = biomeRegistry.register(resourceKey, biome, Lifecycle.stable());
             }
             presetBiomes.add(resourceKey);
-            biomeConfig.setRegistryKey(iBiomeResourceLocation);
             biomeConfig.setOTGBiomeId(otgBiomeId);
 
             // Populate our map for syncing

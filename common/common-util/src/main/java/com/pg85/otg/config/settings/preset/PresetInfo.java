@@ -36,7 +36,7 @@ public class PresetInfo extends ConfigSection {
             "The author of this preset"
     );
     public static final Setting<String> REGISTRY_NAME = Settings.stringSetting(
-            "RegistryName", "default",
+            "RegistryName", "",
             t -> ((PresetInfo) t).getRegistryName(),
             "The shortened name for the preset, used in biome resource locations and similar"
     );
@@ -75,13 +75,14 @@ public class PresetInfo extends ConfigSection {
         presetInfoBuilder.minorVersion(reader.getSetting(MINOR_VERSION));
         presetInfoBuilder.selectableInWorldCreation(reader.getSetting(SELECTABLE_IN_WORLD_CREATION));
 
-        return presetInfoBuilder.fixSettings().build();
+        return presetInfoBuilder.fixSettings(reader.getName()).build();
     }
 
     public static class PresetInfoBuilder {
-        private PresetInfoBuilder() {
-        }
-        public PresetInfoBuilder fixSettings() {
+        public PresetInfoBuilder fixSettings(String presetFolderName) {
+            if (this.registryName.isBlank()) {
+                this.registryName = presetFolderName;
+            }
             this.registryName = this.registryName
                     .toLowerCase(Locale.ROOT)
                     .replaceAll(" ", "_")

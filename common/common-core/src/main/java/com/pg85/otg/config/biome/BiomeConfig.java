@@ -76,7 +76,6 @@ public class BiomeConfig extends BiomeSettings
 	private final Path path;
 	private final PresetConfig parent;
 	private OTGBiomeID otgBiomeID;
-	@Getter
 	@Setter
 	private MobSettings mergedMobSettings = null;
 
@@ -209,4 +208,11 @@ public class BiomeConfig extends BiomeSettings
 	public OTGBiomeID getOTGBiomeID() {
 		return this.otgBiomeID;
 	}
+
+    public MobSettings getMergedMobSettings() {
+		if (mergedMobSettings == null) {
+			mergedMobSettings = mobSettings;
+		}
+        return mergedMobSettings;
+    }
 }
