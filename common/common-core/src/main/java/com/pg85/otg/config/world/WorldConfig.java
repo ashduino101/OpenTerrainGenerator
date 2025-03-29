@@ -136,7 +136,7 @@ public class WorldConfig extends WorldConfigBase
 		this.isleBiomes = filterBiomes(this.isleBiomes, this.worldBiomes);
 		this.borderBiomes = filterBiomes(this.borderBiomes, this.worldBiomes);
 
-		if (this.biomeMode == BiomeMode.FromImage)
+		if (this.biomeMode == BiomeMode.FromImage && settingsDir != null)
 		{
 			File mapFile = new File(settingsDir.toString(), this.imageFile);
 			if (!mapFile.exists())

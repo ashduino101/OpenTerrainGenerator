@@ -5,6 +5,7 @@ import com.pg85.otg.config.biome.BiomeConfig;
 import com.pg85.otg.config.io.NameTable;
 import com.pg85.otg.config.io.PackedFileSettings;
 import com.pg85.otg.config.io.SettingsMap;
+import com.pg85.otg.config.map.ByteArrayMapImageProvider;
 import com.pg85.otg.config.world.WorldConfig;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.bo3.BO3;
@@ -88,7 +89,7 @@ public class PackedPreset implements IPreset
         channel.position(worldConfigOffset);
 
         SettingsMap worldConfigMap = PackedFileSettings.readFromStream(stream, OTG.getEngine().getLogger(), nameTable);
-        WorldConfig worldConfig = new WorldConfig(new File("<packed>").toPath(), worldConfigMap, new ArrayList<>(biomeConfigOffsets.keySet()), OTG.getEngine().getBiomeResourceManager(), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(file.getName()), file.getName());
+        WorldConfig worldConfig = new WorldConfig(null, worldConfigMap, new ArrayList<>(biomeConfigOffsets.keySet()), OTG.getEngine().getBiomeResourceManager(), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(file.getName()), file.getName());
         // Load biome configs
         ArrayList<IBiomeConfig> biomeConfigs = new ArrayList<>();
         for (Map.Entry<String, Long> biomeConfigOffset : biomeConfigOffsets.entrySet()) {
@@ -127,8 +128,22 @@ public class PackedPreset implements IPreset
             }
         }
 
-        // The file isn't a directory, but that should be fine
-        return new PackedPreset(file.getName(), presetShortName, worldConfig, biomeConfigs);
+        PackedPreset preset = new PackedPreset(file.getName(), presetShortName, worldConfig, biomeConfigs);
+
+        // Load map if necessary
+        if (mapOffset != -1) {
+            channel.position(mapOffset);
+            int length = stream.readInt();
+            byte[] data = new byte[length];
+            int numRead = stream.read(data);
+            if (numRead != length) {
+                throw new IOException("failed to read whole image");
+            }
+
+            preset.mapImage = new ByteArrayMapImageProvider(data);
+        }
+
+        return preset;
     }
 
     PackedPreset(String presetId, String presetShortName, IWorldConfig worldConfig, ArrayList<IBiomeConfig> biomeConfigs) {

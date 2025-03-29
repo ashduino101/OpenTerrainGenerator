@@ -1518,10 +1518,8 @@ public class BO4Config extends CustomObjectConfigFile
 			stream.writeShort(maxZ);
 
 			// Convert the blocks to a 1-dimensional array
-//		int sizeX = xSize - this.getminX();
 			int sizeX = maxX - minX;
 			int sizeY = maxY - minY;
-//		int sizeZ = this.zSize - this.getminZ();
 			int sizeZ = maxZ - minZ;
 			List<BO4BlockFunction> blocksFlat = Arrays.asList(new BO4BlockFunction[sizeX * sizeY * sizeZ]);
 
@@ -1658,7 +1656,7 @@ public class BO4Config extends CustomObjectConfigFile
 					throw new InvalidConfigException("Could not read BO4Data file " + this.reader.getName() + ", it is outdated. Delete and re-export BO4Data files to fix this, or delete and reinstall your OTG preset.");
 				}
 				// Version 3 added fixedRotation
-				if(bo4DataVersion > 2)
+				if(bo4DataVersion >= 3)
 				{
 					String rotationString = StreamHelper.readStringFromBuffer(bufferDecompressed);
 					this.fixedRotation = Rotation.getRotation(rotationString);

@@ -74,6 +74,7 @@ public class PresetPacker
             OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.valueOf(bytesRead));
 
             // We don't need to compress it since it's already zlib-compressed per PNG spec
+            stream.writeInt(bytesRead);
             stream.write(imageData, 0, bytesRead);
             stream.flush();
         }

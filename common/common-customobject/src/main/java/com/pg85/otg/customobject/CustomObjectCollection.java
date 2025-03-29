@@ -433,7 +433,7 @@ public class CustomObjectCollection
 						} else {
 							if (logger.getLogCategoryEnabled(LogCategory.CUSTOM_OBJECTS))
 							{
-								logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not load BO2/BO3, it likely contains errors: " + searchForFile);
+								logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not load BO2/BO3/BO4, it likely contains errors: " + searchForFile);
 							}
 							return null;
 						}
@@ -474,7 +474,7 @@ public class CustomObjectCollection
 					} else {
 						if (logger.getLogCategoryEnabled(LogCategory.CUSTOM_OBJECTS))
 						{
-							logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not load BO2/BO3, it probably contains errors: " + searchForFile);
+							logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not load BO2/BO3/BO4, it probably contains errors: " + searchForFile);
 						}
 						return null;
 					}
@@ -486,7 +486,7 @@ public class CustomObjectCollection
 	
 			if (logger.getLogCategoryEnabled(LogCategory.CUSTOM_OBJECTS))
 			{
-				logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not find BO2/BO3 " + name + " in GlobalObjects " + (presetFolderName != null ? "and Objects" : "") + " directory " + (presetFolderName != null ? "for preset " + presetFolderName : "") + ".");
+				logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not find BO2/BO3/BO4 " + name + " in GlobalObjects " + (presetFolderName != null ? "and Objects" : "") + " directory " + (presetFolderName != null ? "for preset " + presetFolderName : "") + ".");
 			}
 	
 			return null;

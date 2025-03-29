@@ -26,6 +26,8 @@ import com.pg85.otg.customobject.config.CustomObjectConfigFunction;
 import com.pg85.otg.customobject.config.CustomObjectResourcesManager;
 import com.pg85.otg.customobject.config.io.SettingsReaderBO4;
 import com.pg85.otg.customobject.config.io.SettingsWriterBO4;
+import com.pg85.otg.customobject.util.BlockPacker;
+import com.pg85.otg.customobject.util.BlockUnpacker;
 import com.pg85.otg.customobject.util.BoundingBox;
 import com.pg85.otg.customobject.util.BO3Enums.ExtrudeMode;
 import com.pg85.otg.customobject.util.BO3Enums.OutsideSourceBlock;
@@ -749,7 +751,7 @@ public class BO3Config extends CustomObjectConfigFile
 		this.bo3Checks[0] = checks;
 	}
 
-	private static final int bo3DataVersion = 2;
+	private static final int bo3DataVersion = 3;
 	public void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
 	{
 		stream.writeInt(bo3DataVersion);
@@ -787,142 +789,9 @@ public class BO3Config extends CustomObjectConfigFile
 		// Resources
 		// TODO: rewrite this part (it probably doesn't work)
 
-		BO3BlockFunction[] blocks = getBlocks(0);
-		stream.writeBoolean(blocks.length > 0);  // hasBlocks
-		if (blocks.length > 0) {
-			ArrayList<LocalMaterialData> materials = new ArrayList<LocalMaterialData>();
-			ArrayList<String> metaDataNames = new ArrayList<String>();
-			HashMap<int[], Integer> blockNbt = new HashMap<>();
-			for (BO3BlockFunction block : blocks) {
-				if (block instanceof BO3RandomBlockFunction) {
-					// TODO: random block functions aren't written
-					for (LocalMaterialData material : ((BO3RandomBlockFunction) block).blocks) {
-						if (!materials.contains(material)) {
-							materials.add(material);
-						}
-					}
-				}
-
-				if (block.material != null && !materials.contains(block.material)) {
-					materials.add(block.material);
-				}
-				if (block.nbtName != null) {
-					if (!metaDataNames.contains(block.nbtName)) {
-						metaDataNames.add(block.nbtName);
-					}
-					blockNbt.put(new int[]{block.x, block.y, block.z}, metaDataNames.indexOf(block.nbtName));
-				}
-			}
-
-			String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
-			LocalMaterialData[] materialsArr = materials.toArray(new LocalMaterialData[0]);
-
-			stream.writeShort(metaDataNamesArr.length);
-            for (String s : metaDataNamesArr) {
-                StreamHelper.writeStringToStream(stream, s);
-            }
-
-			stream.writeShort(materialsArr.length);
-            for (LocalMaterialData localMaterialData : materialsArr) {
-                StreamHelper.writeStringToStream(stream, localMaterialData.getName());
-            }
-
-			int bitsPerBlock = 32 - Integer.numberOfLeadingZeros(materialsArr.length);  // 32 - clz(n - 1)
-
-			// TODO: This assumes that loading blocks in a different order won't matter, which may not be true?
-			// Anything that spawns on top, entities/spawners etc, should be spawned last tho, so shouldn't be a problem?
-
-			// Get bounds
-			int minX = Integer.MAX_VALUE;
-			int maxX = Integer.MIN_VALUE;
-			int minY = Integer.MAX_VALUE;
-			int maxY = Integer.MIN_VALUE;
-			int minZ = Integer.MAX_VALUE;
-			int maxZ = Integer.MIN_VALUE;
-			for (BO3BlockFunction block : blocks) {
-				if (block.x < minX) {
-					minX = block.x;
-				}
-				if (block.x > maxX) {
-					maxX = block.x;
-				}
-				if (block.y < minY) {
-					minY = block.y;
-				}
-				if (block.y > maxY) {
-					maxY = block.y;
-				}
-				if (block.z < minZ) {
-					minZ = block.z;
-				}
-				if (block.z > maxZ) {
-					maxZ = block.z;
-				}
-			}
-
-			maxX += 1;
-			maxY += 1;
-			maxZ += 1;
-
-			stream.writeShort(minX);
-			stream.writeShort(maxX);
-			stream.writeShort(minY);
-			stream.writeShort(maxY);
-			stream.writeShort(minZ);
-			stream.writeShort(maxZ);
-
-			// Convert the blocks to a 1-dimensional array
-			int sizeX = maxX - minX;
-			int sizeY = maxY - minY;
-			int sizeZ = maxZ - minZ;
-			List<BO3BlockFunction> blocksFlat = Arrays.asList(new BO3BlockFunction[sizeX * sizeY * sizeZ]);
-
-			stream.writeInt(blocksFlat.size());
-			stream.writeByte(bitsPerBlock);
-
-			for (BO3BlockFunction block : blocks) {
-				int normX = block.x - minX;
-				int normY = block.y - minY;
-				int normZ = block.z - minZ;
-				int idx = (normZ * sizeX * sizeY) + (normY * sizeX) + normX;
-				blocksFlat.set(idx, block);
-			}
-
-			// Pack them to the stream
-			long currentLong = 0;
-			int bitpos = 0;
-
-			for (BO3BlockFunction block : blocksFlat) {
-				int material = 0;  // 0 is null
-				if (block != null) {
-					material = materials.indexOf(block.material) + 1;
-				}
-
-				currentLong |= ((long) material << bitpos);
-				bitpos += bitsPerBlock;
-				if ((bitpos + bitsPerBlock) > 64) {  // will the next block overflow?
-					// write the long to the stream
-					stream.writeLong(currentLong);
-					// reset the state
-					bitpos = 0;
-					currentLong = 0;
-				}
-			}
-
-			// Flush
-			if (bitpos >= bitsPerBlock) {
-				stream.writeLong(currentLong);
-			}
-
-			stream.writeInt(blockNbt.size());
-			for (Map.Entry<int[], Integer> nbt : blockNbt.entrySet()) {
-				int[] pos = nbt.getKey();
-				stream.writeShort(pos[0]);
-				stream.writeShort(pos[1]);
-				stream.writeShort(pos[2]);
-				stream.writeShort(nbt.getValue());
-			}
-		}
+		List<BlockFunction<?>> blocks = Arrays.asList(getBlocks(0));
+		BlockPacker packer = new BlockPacker(stream);
+		packer.packToStream(blocks);
 
 		stream.writeInt(this.bo3Checks[0].length);
 		for (BO3Check func : this.bo3Checks[0]) {
@@ -1010,91 +879,13 @@ public class BO3Config extends CustomObjectConfigFile
 		// Resources
 		BoundingBox box = BoundingBox.newEmptyBox();
 
-		boolean hasBlocks = stream.readBoolean();
-		List<BO3BlockFunction> blocks = new ArrayList<>();
-		if (hasBlocks) {
-			String[] metaDataNamesArr = new String[stream.readShort()];
-			for (int i = 0; i < metaDataNamesArr.length; i++)
-			{
-				metaDataNamesArr[i] = StreamHelper.readStringFromStream(stream);
-			}
-
-			LocalMaterialData[] materialsArr = new LocalMaterialData[stream.readShort()];
-			for (int i = 0; i < materialsArr.length; i++)
-			{
-				String materialName = StreamHelper.readStringFromStream(stream);
-				try {
-					materialsArr[i] = materialReader.readMaterial(materialName);
-				} catch (InvalidConfigException e) {
-					if (logger.getLogCategoryEnabled(LogCategory.CUSTOM_OBJECTS))
-					{
-						logger.log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Could not read material \"" + materialName + "\".");
-					}
-				}
-			}
-
-			short minX = stream.readShort();
-			short maxX = stream.readShort();
-			short minY = stream.readShort();
-			short maxY = stream.readShort();
-			short minZ = stream.readShort();
-			short maxZ = stream.readShort();
-
-			int sizeX = maxX - minX;
-			int sizeY = maxY - minY;
-
-			int numBlocks = stream.readInt();
-			byte bitsPerBlock = stream.readByte();
-			logger.log(LogLevel.INFO, LogCategory.MAIN, String.format("%d blocks of %d bits", numBlocks, bitsPerBlock));
-			long mask = (1L << ((long) bitsPerBlock)) - 1;
-
-			byte blocksPerLong = (byte) (64 / bitsPerBlock);
-			int numLongs = (int) Math.ceil((double) numBlocks / blocksPerLong);
-
-			for (int i = 0; i < numLongs; i++) {
-				long value = stream.readLong();
-				for (int j = 0; j < blocksPerLong; j++) {
-					int blockIndex = i * blocksPerLong + j;
-					if (blockIndex >= numBlocks) break;
-					byte bitPos = (byte) (j * bitsPerBlock);
-					int material = (int) ((value & (mask << bitPos)) >> bitPos) - 1;
-
-					// i hate java i hate java i hate java
-					if (material < -1) {
-						material += (1 << bitsPerBlock);
-					}
-
-					if (material != -1) {
-						int idx = blockIndex;
-						final int z = idx / (sizeX * sizeY);
-						idx -= (z * sizeX * sizeY);
-						final int y = idx / sizeX;
-						final int x = idx % sizeX;
-
-						BO3BlockFunction func = new BO3BlockFunction();
-						func.x = minX + x;
-						func.y = (short) (minY + y);
-						func.z = minZ + z;
-						func.material = materialsArr[material];
-						blocks.add(func);
-
-						box.expandToFit(func.x, func.y, func.z);
-					}
-				}
-			}
-
-			int numNbt = stream.readInt();
-			for (int i = 0; i < numNbt; i++) {
-				short x = stream.readShort();
-				short y = stream.readShort();
-				short z = stream.readShort();
-				short idx = stream.readShort();
-				Optional<BO3BlockFunction> block = blocks.stream().filter(b -> b.x == x && b.y == y && b.z == z).findFirst();
-                block.ifPresent(bo3BlockFunction -> bo3BlockFunction.nbtName = metaDataNamesArr[idx]);
-			}
+		List<BlockFunction<?>> blocks;
+		BlockUnpacker unpacker = new BlockUnpacker();
+		blocks = unpacker.unpackFromStream(stream, BO3BlockFunction::new, materialReader, logger);
+		for (BlockFunction<?> block : blocks) {
+			box.expandToFit(block.x, block.y, block.z);
 		}
-		BO3BlockFunction[] b = blocks.toArray(new BO3BlockFunction[0]);
-		config.extractBlocks(Arrays.asList(b));
+		config.extractBlocks(blocks);
 
 		config.boundingBoxes[0] = box;
 
@@ -1138,7 +929,6 @@ public class BO3Config extends CustomObjectConfigFile
 
 		// TODO: save/load these as binary
 		int numBranches = stream.readInt();
-		logger.log(LogLevel.INFO, LogCategory.MAIN, String.format("%d branches", numBranches));
 		config.branches[0] = new BO3BranchFunction[numBranches];
 		for (int i = 0; i < numBranches; i++) {
 			BO3BranchFunction func = BO3BranchFunction.fromStream(stream, logger, materialReader);
@@ -1154,7 +944,7 @@ public class BO3Config extends CustomObjectConfigFile
 			// TODO doesn't work
 		}
 
-		// FIXME
+		// FIXME: what is the preset folder name used for here?
 		config.rotateBlocksAndChecks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
 
 		return config;
