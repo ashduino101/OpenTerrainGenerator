@@ -110,6 +110,7 @@ public abstract class EntityFunction<T extends CustomObjectConfigFile> extends C
 
 	public void processNameTagOrFileName(String s, ILogger logger)
 	{
+		if (getHolder().getFile() == null) return;  // FIXME: packed presets
 		this.originalNameTagOrNBTFileName = s;
 
 		if(this.originalNameTagOrNBTFileName != null && this.originalNameTagOrNBTFileName.toLowerCase().trim().endsWith(".txt"))

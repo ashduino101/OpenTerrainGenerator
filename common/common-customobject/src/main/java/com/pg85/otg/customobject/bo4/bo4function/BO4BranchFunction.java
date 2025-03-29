@@ -16,6 +16,8 @@ import com.pg85.otg.util.helpers.StringHelper;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -224,10 +226,10 @@ public class BO4BranchFunction extends BranchFunction<BO4Config>
 		StreamHelper.writeStringToStream(stream, makeString());
 	}
 	
-	public static BO4BranchFunction fromStream(BO4Config holder, ByteBuffer buffer, ILogger logger, IMaterialReader materialReader) throws IOException, InvalidConfigException
+	public static BO4BranchFunction fromStream(BO4Config holder, DataInputStream buffer, ILogger logger, IMaterialReader materialReader) throws IOException, InvalidConfigException
 	{
 		BO4BranchFunction branchFunction = new BO4BranchFunction(holder);		
-		String configFunctionString = StreamHelper.readStringFromBuffer(buffer);
+		String configFunctionString = StreamHelper.readStringFromStream(buffer);
 		int bracketIndex = configFunctionString.indexOf('(');
 		String parameters = configFunctionString.substring(bracketIndex + 1, configFunctionString.length() - 1);
 		List<String> args = Arrays.asList(StringHelper.readCommaSeperatedString(parameters));

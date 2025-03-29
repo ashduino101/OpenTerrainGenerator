@@ -1,5 +1,6 @@
 package com.pg85.otg.customobject.bo4.bo4function;
 
+import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
@@ -282,17 +283,17 @@ public class BO4RandomBlockFunction extends BO4BlockFunction
 		}
 	}
 	
-	public static BO4RandomBlockFunction fromStream(int x, int z, String[] metaDataNames, LocalMaterialData[] materials, BO4Config holder, ByteBuffer buffer, ILogger logger) throws IOException
+	public static BO4RandomBlockFunction fromStream(int x, int z, String[] metaDataNames, LocalMaterialData[] materials, BO4Config holder, DataInputStream buffer, ILogger logger) throws IOException
 	{		
 		BO4RandomBlockFunction rbf = new BO4RandomBlockFunction(holder);
 		
 		File file = holder.getFile();
 		
 		rbf.x = x;
-		rbf.y = buffer.getShort();
+		rbf.y = buffer.readShort();
 		rbf.z = z;
 
-		byte blocksLength = buffer.get();
+		byte blocksLength = buffer.readByte();
 		
 		rbf.blockCount = blocksLength;
 		rbf.blocks = new LocalMaterialData[blocksLength];
@@ -302,18 +303,18 @@ public class BO4RandomBlockFunction extends BO4BlockFunction
 
 		for(int i = 0; i < blocksLength; i++)
 		{
-			rbf.blockChances[i] = buffer.get();
-			short materialId = buffer.getShort();
+			rbf.blockChances[i] = buffer.readByte();
+			short materialId = buffer.readShort();
 			if(materialId != -1)
 			{
 				rbf.blocks[i] = materials[materialId];
 			}
 		}
 		
-		blocksLength = buffer.get();
+		blocksLength = buffer.readByte();
 		for(int i = 0; i < blocksLength; i++)
 		{
-			short metaDataNameId = buffer.getShort();
+			short metaDataNameId = buffer.readShort();
 			if(metaDataNameId != -1)
 			{
 				rbf.metaDataNames[i] = metaDataNames[metaDataNameId];

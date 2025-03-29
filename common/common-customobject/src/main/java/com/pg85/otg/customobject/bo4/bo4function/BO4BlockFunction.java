@@ -1,5 +1,6 @@
 package com.pg85.otg.customobject.bo4.bo4function;
 
+import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
@@ -117,22 +118,22 @@ public class BO4BlockFunction extends BlockFunction<BO4Config>
 		}
 	}
 
-	public static BO4BlockFunction fromStream(int x, int z, String[] metaDataNames, LocalMaterialData[] materials, BO4Config holder, ByteBuffer buffer, ILogger logger) throws IOException
+	public static BO4BlockFunction fromStream(int x, int z, String[] metaDataNames, LocalMaterialData[] materials, BO4Config holder, DataInputStream buffer, ILogger logger) throws IOException
 	{
 		BO4BlockFunction rbf = new BO4BlockFunction(holder);
 		
 		File file = holder.getFile();
 		
 		rbf.x = x;
-		rbf.y = buffer.getShort();
+		rbf.y = buffer.readShort();
 		rbf.z = z;
 		
-		short materialId = buffer.getShort();
+		short materialId = buffer.readShort();
 		if(materialId != -1)
 		{
 			rbf.material = materials[materialId];
 		}
-		short metaDataNameId = buffer.getShort();
+		short metaDataNameId = buffer.readShort();
 		if(metaDataNameId != -1)
 		{
 			rbf.nbtName = metaDataNames[metaDataNameId];

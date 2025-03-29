@@ -202,7 +202,7 @@ public class PresetPacker
 
         stream.writeByte(4);
 
-        BO4Data.generateBO4DataToStream((object).getConfig(), dataOut, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), false);
+        BO4Data.generateBO4DataToStream(object.getConfig(), dataOut, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), false);
 
         offsets.put(object.getName(), offset);
 
