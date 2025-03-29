@@ -5,7 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.pg85.otg.OTG;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.presets.PresetPacker;
 import com.pg85.otg.spigot.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.util.logging.LogCategory;
@@ -50,19 +51,25 @@ public class ExportPresetPackCommand extends BaseCommand
             return true;
         }
 
-        Preset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
+        IPreset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
+        if (!(preset instanceof PresetFolder))
+        {
+            sender.sendMessage("Only unpacked presets can be packed.");
+            return true;
+        }
+
         if (!isRunning)
         {
             isRunning = true;
             sender.sendMessage("Packing preset for distribution, this might take a while...");
             sender.sendMessage("Run this command again to see progress.");
             new Thread(() -> {
-                String outputPath = OTG.getEngine().getPresetsDirectory() + "/" + preset.getFolderName() + ".preset";
+                String outputPath = OTG.getEngine().getPresetsDirectory() + "/" + preset.getId() + ".preset";
                 try (FileOutputStream file = new FileOutputStream(outputPath))
                 {
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("Packing preset to %s", outputPath));
 
-                    PresetPacker.packToFile(preset, file, OTG.getEngine().getLogger());
+                    PresetPacker.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
 
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Preset export complete.");
                     sender.sendMessage("OTG preset export is done.");

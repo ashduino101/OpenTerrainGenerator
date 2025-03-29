@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import com.pg85.otg.interfaces.*;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -27,13 +28,8 @@ import com.pg85.otg.constants.SettingsEnums.BiomeMode;
 import com.pg85.otg.gen.biome.BiomeData;
 import com.pg85.otg.gen.biome.layers.BiomeLayerData;
 import com.pg85.otg.gen.biome.layers.NewBiomeGroup;
-import com.pg85.otg.interfaces.IBiome;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.IBiomeResourceLocation;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IWorldConfig;
 import com.pg85.otg.presets.LocalPresetLoader;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.biome.SpigotBiome;
 import com.pg85.otg.spigot.materials.SpigotMaterialReader;
 import com.pg85.otg.spigot.networking.BiomeSettingSyncWrapper;
@@ -79,13 +75,13 @@ public class SpigotPresetLoader extends LocalPresetLoader
 	@Override
 	public void registerBiomes()
 	{
-		for(Preset preset : this.presets.values())
+		for(IPreset preset : this.presets.values())
 		{
 			registerBiomesForPreset(false, preset);
 		}
 	}
 
-	private void registerBiomesForPreset(boolean refresh, Preset preset)
+	private void registerBiomesForPreset(boolean refresh, IPreset preset)
 	{
 		IRegistryWritable<BiomeBase> biomeRegistry = ((CraftServer)Bukkit.getServer()).getServer().customRegistry.b(BIOME_KEY);
 		// Index BiomeColors for FromImageMode and /otg map
@@ -95,7 +91,7 @@ public class SpigotPresetLoader extends LocalPresetLoader
 		int currentId = 1;
 		
 		List<ResourceKey<BiomeBase>> presetBiomes = new ArrayList<>();
-		this.biomesByPresetFolderName.put(preset.getFolderName(), presetBiomes);
+		this.biomesByPresetFolderName.put(preset.getId(), presetBiomes);
 
 		IWorldConfig worldConfig = preset.getWorldConfig();
 		IBiomeConfig oceanBiomeConfig = null;
@@ -117,7 +113,7 @@ public class SpigotPresetLoader extends LocalPresetLoader
 			// TODO: Implement template biomes for spigot?
 			if(!biomeConfig.getIsTemplateForBiome())
 			{
-				IBiomeResourceLocation otgLocation = new OTGBiomeResourceLocation(preset.getPresetFolder(), preset.getShortPresetName(), preset.getMajorVersion(), biomeConfig.getName());
+				IBiomeResourceLocation otgLocation = new OTGBiomeResourceLocation(preset.getId(), preset.getShortPresetName(), preset.getMajorVersion(), biomeConfig.getName());
 				biomeConfigsByResourceLocation.put(otgLocation, biomeConfig);
 				biomeConfigsByName.put(biomeConfig.getName(), biomeConfig);
 			}
@@ -199,8 +195,8 @@ public class SpigotPresetLoader extends LocalPresetLoader
 			IBiome otgBiome = new SpigotBiome(biome, biomeConfig.getValue());
 			if(otgBiomeId >= presetIdMapping.length)
 			{
-				OTG.getEngine().getLogger().log(LogLevel.FATAL, LogCategory.CONFIGS, "Fatal error while registering OTG biome id's for preset " + preset.getFolderName() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
-				throw new RuntimeException("Fatal error while registering OTG biome id's for preset " + preset.getFolderName() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
+				OTG.getEngine().getLogger().log(LogLevel.FATAL, LogCategory.CONFIGS, "Fatal error while registering OTG biome id's for preset " + preset.getId() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
+				throw new RuntimeException("Fatal error while registering OTG biome id's for preset " + preset.getId() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
 			}
 			presetIdMapping[otgBiomeId] = otgBiome;
 
@@ -268,10 +264,10 @@ public class SpigotPresetLoader extends LocalPresetLoader
 			System.arraycopy(presetIdMapping, 1, presetIdMapping, 0, presetIdMapping.length - 1);
 		}
 		
-		this.globalIdMapping.put(preset.getFolderName(), presetIdMapping);
+		this.globalIdMapping.put(preset.getId(), presetIdMapping);
 
 		// Set the base data
-		BiomeLayerData data = new BiomeLayerData(preset.getPresetFolder(), worldConfig, oceanBiomeConfig, oceanTemperatures);
+		BiomeLayerData data = new BiomeLayerData(preset.getMapImageSource(), worldConfig, oceanBiomeConfig, oceanTemperatures);
 		
 		Set<Integer> biomeDepths = new HashSet<>();
 		Map<Integer, List<NewBiomeGroup>> groupDepths = new HashMap<>();
@@ -362,7 +358,7 @@ public class SpigotPresetLoader extends LocalPresetLoader
 		data.init(biomeDepths, groupDepths, isleBiomesAtDepth, borderBiomesAtDepth, worldBiomes, biomeColorMap, presetIdMapping);
 
 		// Set data for this preset
-		this.presetGenerationData.put(preset.getFolderName(), data);
+		this.presetGenerationData.put(preset.getId(), data);
 	}
 
 	public IBiomeConfig getBiomeConfig(BiomeBase biome)

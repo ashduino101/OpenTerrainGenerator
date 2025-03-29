@@ -15,6 +15,7 @@ import com.pg85.otg.constants.SettingsEnums.ImageOrientation;
 import com.pg85.otg.gen.biome.BiomeData;
 import com.pg85.otg.interfaces.IBiome;
 import com.pg85.otg.interfaces.IBiomeConfig;
+import com.pg85.otg.interfaces.IMapImageProvider;
 import com.pg85.otg.interfaces.IWorldConfig;
 
 /**
@@ -56,8 +57,7 @@ public class BiomeLayerData
 	public final ImageMode imageMode;
 	public final String configImageFillBiome;
 	public int imageFillBiome;
-	public final Path presetDir;
-	public final String imageFile;
+	public final IMapImageProvider mapImageProvider;
 	public final ImageOrientation imageOrientation;
 
 
@@ -80,8 +80,7 @@ public class BiomeLayerData
 		this.imageMode = data.imageMode;
 		this.configImageFillBiome = data.configImageFillBiome;
 		this.imageFillBiome = data.imageFillBiome;
-		this.presetDir = data.presetDir;
-		this.imageFile = data.imageFile;
+		this.mapImageProvider = data.mapImageProvider;
 		this.imageOrientation = data.imageOrientation;
 
 		this.biomeMode = data.biomeMode;
@@ -156,14 +155,13 @@ public class BiomeLayerData
 		System.arraycopy(data.oceanTemperatures, 0, this.oceanTemperatures, 0, 4);
 	}
 	
-	public BiomeLayerData(Path presetDir, IWorldConfig worldConfig, IBiomeConfig oceanBiomeConfig, int[] oceanTemperatures)
+	public BiomeLayerData(IMapImageProvider mapImageProvider, IWorldConfig worldConfig, IBiomeConfig oceanBiomeConfig, int[] oceanTemperatures)
 	{
 		this.imageXOffset = worldConfig.getImageXOffset();
 		this.imageZOffset = worldConfig.getImageZOffset();
 		this.imageMode = worldConfig.getImageMode();
 		this.configImageFillBiome = worldConfig.getImageFillBiome();
-		this.presetDir = presetDir;
-		this.imageFile = worldConfig.getImageFile();
+		this.mapImageProvider = mapImageProvider;
 		this.imageOrientation = worldConfig.getImageOrientation();
 		
 		this.biomeMode = worldConfig.getBiomeMode();

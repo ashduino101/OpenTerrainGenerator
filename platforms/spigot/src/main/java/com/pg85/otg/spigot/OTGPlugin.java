@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.pg85.otg.interfaces.IPreset;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_16_R3.CraftServer;
@@ -18,7 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.pg85.otg.OTG;
 import com.pg85.otg.constants.Constants;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.biome.OTGBiomeProvider;
 import com.pg85.otg.spigot.commands.OTGCommandExecutor;
 import com.pg85.otg.spigot.events.OTGHandler;
@@ -104,7 +105,7 @@ public class OTGPlugin extends JavaPlugin implements Listener
 		{
 			id = "Default";
 		}
-		Preset preset = OTG.getEngine().getPresetLoader().getPresetByShortNameOrFolderName(id);
+		IPreset preset = OTG.getEngine().getPresetLoader().getPresetByShortNameOrFolderName(id);
 		if (preset == null)
 		{
 			OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.MAIN, "Could not find preset '" + id + "', did you install it correctly?");
@@ -156,8 +157,8 @@ public class OTGPlugin extends JavaPlugin implements Listener
 		if (OTGGen.generator == null)
 		{
 			OTGDelegate = new OTGNoiseChunkGenerator(
-				OTGGen.getPreset().getFolderName(),
-				new OTGBiomeProvider(OTGGen.getPreset().getFolderName(), world.getSeed(), false, false, ((CraftServer) Bukkit.getServer()).getServer().customRegistry.b(IRegistry.ay)),
+				OTGGen.getPreset().getId(),
+				new OTGBiomeProvider(OTGGen.getPreset().getId(), world.getSeed(), false, false, ((CraftServer) Bukkit.getServer()).getServer().customRegistry.b(IRegistry.ay)),
 				world.getSeed(),
 				GeneratorSettingBase::i
 			);

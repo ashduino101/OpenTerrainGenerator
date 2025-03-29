@@ -15,13 +15,7 @@ import com.pg85.otg.gen.carver.RavineCarver;
 import com.pg85.otg.gen.noise.OctavePerlinNoiseSampler;
 import com.pg85.otg.gen.noise.PerlinNoiseSampler;
 import com.pg85.otg.gen.noise.legacy.NoiseGeneratorPerlinMesaBlocks;
-import com.pg85.otg.interfaces.IBiome;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.ICachedBiomeProvider;
-import com.pg85.otg.interfaces.ILayerSource;
-import com.pg85.otg.interfaces.ILogger;
-import com.pg85.otg.interfaces.ISurfaceGeneratorNoiseProvider;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.ChunkCoordinate;
 import com.pg85.otg.util.gen.ChunkBuffer;
 import com.pg85.otg.util.gen.DecorationArea;
@@ -79,7 +73,7 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider
 	private final OctavePerlinNoiseSampler upperInterpolatedNoise; // Volatility2 noise
 	private final OctavePerlinNoiseSampler depthNoise;
 
-	private final Preset preset;
+	private final IPreset preset;
 	private final long seed;
 	private final CachedBiomeProvider cachedBiomeProvider;
 
@@ -99,7 +93,7 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider
 	private ThreadLocal<Integer> lastZ = ThreadLocal.withInitial(() -> Integer.MAX_VALUE);
 	private ThreadLocal<Double> lastNoise = ThreadLocal.withInitial(() -> 0d);
 
-	public OTGChunkGenerator(Preset preset, long seed, ILayerSource biomeProvider, IBiome[] biomesById, ILogger logger)
+	public OTGChunkGenerator(IPreset preset, long seed, ILayerSource biomeProvider, IBiome[] biomesById, ILogger logger)
 	{
 		this.preset = preset;
 		this.seed = seed;

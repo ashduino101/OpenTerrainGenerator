@@ -14,7 +14,8 @@ import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.forge.commands.arguments.FlagsArgument;
 import com.pg85.otg.forge.commands.arguments.PresetArgument;
 import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import net.minecraft.command.CommandSource;
@@ -58,7 +59,7 @@ public class UpdateCommand extends BaseCommand
 	{
 		// Get preset
 		String presetFolderName = context.getArgument("preset", String.class);
-		Preset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
+		IPreset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
 		CommandSource source = context.getSource();
 		boolean tempLeavesFlag = false;
 
@@ -76,12 +77,16 @@ public class UpdateCommand extends BaseCommand
 			context.getSource().sendSuccess(new StringTextComponent("Could not find preset '" + presetFolderName + "'"), false);
 			return 0;
 		}
+		if (!(preset instanceof PresetFolder)) {
+			source.sendSuccess(new StringTextComponent("Only unpacked presets can be edited."), false);
+			return 0;
+		}
 
 		// Get list of BO's
 		List<String> objectNameList = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getAllBONamesForPreset(presetFolderName, OTG.getEngine().getLogger(), OTG.getEngine().getOTGRootFolder());
 
 		// Create folder for the fixed objects to be exported to
-		Path fixedObjectFolderPath = preset.getPresetFolder()
+		Path fixedObjectFolderPath = ((PresetFolder) preset).getPresetFolder()
 			.resolve("Updated Objects");
 		fixedObjectFolderPath.toFile().mkdirs();
 

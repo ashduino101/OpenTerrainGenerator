@@ -16,11 +16,8 @@ import com.pg85.otg.customobject.creator.ObjectType;
 import com.pg85.otg.customobject.structures.StructuredCustomObject;
 import com.pg85.otg.customobject.util.Corner;
 import com.pg85.otg.exceptions.InvalidConfigException;
-import com.pg85.otg.interfaces.ICustomObjectManager;
-import com.pg85.otg.interfaces.ILogger;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IModLoadedChecker;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.*;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.commands.RegionCommand.Region;
 import com.pg85.otg.spigot.gen.SpigotWorldGenRegion;
 import com.pg85.otg.spigot.materials.SpigotMaterialData;
@@ -313,10 +310,15 @@ public class EditCommand extends BaseCommand
 			return true;
 		}
 		ObjectType type = inputObject.getType();
-		Preset preset = ObjectUtils.getPresetOrDefault(presetFolderName);
+		IPreset preset = ObjectUtils.getPresetOrDefault(presetFolderName);
 		if (preset == null)
 		{
 			source.sendMessage("Could not find preset " + (presetFolderName == null ? "" : presetFolderName));
+			return true;
+		}
+		if (!(preset instanceof PresetFolder))
+		{
+			source.sendMessage("Only unpacked presets can be edited.");
 			return true;
 		}
 		SpigotWorldGenRegion worldGenRegion = ObjectUtils.getWorldGenRegion(preset, (CraftWorld) source.getWorld());
@@ -324,13 +326,13 @@ public class EditCommand extends BaseCommand
 		Corner center = region.getCenter();
 		ObjectUtils.cleanArea(worldGenRegion, region.getMin(), region.getMax(), true);
 		ArrayList<BlockFunction<?>> extraBlocks = spawnAndFixObject(center.x, center.y, center.z, inputObject, worldGenRegion, doFixing, presetFolderName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetFolderName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
-		Path path = ObjectUtils.getObjectFolderPath(isGlobal ? null : preset.getPresetFolder()).resolve(ObjectUtils.getFoldersFromObject(inputObject));
+		Path path = ObjectUtils.getObjectFolderPath(isGlobal ? null : ((PresetFolder) preset).getPresetFolder()).resolve(ObjectUtils.getFoldersFromObject(inputObject));
 		if (immediate)
 		{
 			(new Thread(ObjectUtils.getExportRunnable(type, region, center, inputObject, path, extraBlocks, presetFolderName, true, leaveIllegalLeaves, source, worldGenRegion))).start();
 			return true;
 		}
-		sessionsMap.put(source, new EditCommand.EditSession(type, worldGenRegion, inputObject, extraBlocks, path, preset.getFolderName(), center, leaveIllegalLeaves));
+		sessionsMap.put(source, new EditCommand.EditSession(type, worldGenRegion, inputObject, extraBlocks, path, preset.getId(), center, leaveIllegalLeaves));
 		source.sendMessage("You can now edit the object");
 		source.sendMessage("To change the area of the object, use /otg region");
 		source.sendMessage("When you are done editing, do /otg finishedit");

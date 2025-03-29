@@ -18,7 +18,8 @@ import com.pg85.otg.forge.commands.arguments.PresetArgument;
 import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
 import com.pg85.otg.forge.gen.MCWorldGenRegion;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.ChunkCoordinate;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.logging.LogCategory;
@@ -110,19 +111,19 @@ public class SpawnCommand extends BaseCommand
 				return 0;
 			}
 
-			Preset preset = ObjectUtils.getPresetOrDefault(presetName);
+			IPreset preset = ObjectUtils.getPresetOrDefault(presetName);
 			ForgeWorldGenRegion genRegion;
 			if(source.getLevel().getChunkSource().getGenerator() instanceof OTGNoiseChunkGenerator)
 			{
 				genRegion = new ForgeWorldGenRegion(
-					preset.getFolderName(), 
+					preset.getId(),
 					preset.getWorldConfig(), 
 					source.getLevel(), 
 					(OTGNoiseChunkGenerator)source.getLevel().getChunkSource().getGenerator()
 				);
 			} else {
 				genRegion = new MCWorldGenRegion(
-					preset.getFolderName(), 
+					preset.getId(),
 					preset.getWorldConfig(), 
 					source.getLevel()
 				);
@@ -154,11 +155,11 @@ public class SpawnCommand extends BaseCommand
 	        		int x = playerChunk.getBlockX() + ((BO4)objectToSpawn).getConfig().getminX();
 	        		int z = playerChunk.getBlockZ() + ((BO4)objectToSpawn).getConfig().getminZ();
 	        		((BO4)objectToSpawn).trySpawnAt(
-        				preset.getFolderName(), 
+        				preset.getId(),
         				OTG.getEngine().getOTGRootFolder(), 
         				OTG.getEngine().getLogger(), 
         				OTG.getEngine().getCustomObjectManager(), 
-        				OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), 
+        				OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
         				OTG.getEngine().getCustomObjectResourcesManager(), 
         				null, 
         				genRegion, 
@@ -221,7 +222,7 @@ public class SpawnCommand extends BaseCommand
 	                            			OTG.getEngine().getOTGRootFolder(),
 	                            			OTG.getEngine().getLogger(), 
 	                            			OTG.getEngine().getCustomObjectManager(), 
-	                            			OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), 
+	                            			OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
 	                            			OTG.getEngine().getCustomObjectResourcesManager(), 
 	                            			OTG.getEngine().getModLoadedChecker(), 
 	                            			force

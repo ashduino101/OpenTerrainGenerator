@@ -5,15 +5,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.pg85.otg.config.biome.BiomeConfig;
+import com.pg85.otg.config.map.FileMapImageProvider;
 import com.pg85.otg.config.world.WorldConfig;
 import com.pg85.otg.interfaces.IBiomeConfig;
+import com.pg85.otg.interfaces.IMapImageProvider;
+import com.pg85.otg.interfaces.IPreset;
 import com.pg85.otg.interfaces.IWorldConfig;
 
 /**
  * Represents an OTG preset, with all its world and biome configs, stored in /config/OpenTerrainGenerator/Presets/\<PresetName\>/.
  */
-public class Preset
-{
+public class PresetFolder implements IPreset {
 	private final Path presetFolder;
 	private String presetFolderName;
 	private String shortPresetName;
@@ -24,17 +26,13 @@ public class Preset
 	private WorldConfig worldConfig;
 	private HashMap<String, IBiomeConfig> biomeConfigs = new HashMap<String, IBiomeConfig>();
 	private int majorVersion;
-	private String author;
-	private String description;
 	
-	public Preset(Path presetFolder, String shortPresetName, WorldConfig worldConfig, ArrayList<BiomeConfig> biomeConfigs)
+	public PresetFolder(Path presetFolder, String shortPresetName, WorldConfig worldConfig, ArrayList<BiomeConfig> biomeConfigs)
 	{
 		this.presetFolder = presetFolder;
 		this.presetFolderName = presetFolder.toFile().getName();
 		this.shortPresetName = shortPresetName;
 		this.worldConfig = worldConfig;
-		this.author = worldConfig.getAuthor();
-		this.description = worldConfig.getDescription();
 		this.majorVersion = worldConfig.getMajorVersion();
 
 		for(BiomeConfig biomeConfig : biomeConfigs)
@@ -43,13 +41,15 @@ public class Preset
 		}		
 	}
 
-	public void update(Preset preset)
+	public void update(IPreset preset)
 	{
-		this.worldConfig = preset.worldConfig;
-		this.biomeConfigs = preset.biomeConfigs;
-		this.author = preset.author;
-		this.description = preset.description; 
-		this.majorVersion = preset.majorVersion;
+		if (!(preset instanceof PresetFolder)) {
+			throw new UnsupportedOperationException("Can only update PresetFolder with another PresetFolder");
+		}
+		PresetFolder folder = (PresetFolder) preset;
+		this.worldConfig = folder.worldConfig;
+		this.biomeConfigs = folder.biomeConfigs;
+		this.majorVersion = folder.majorVersion;
 	}
 
 	public Path getPresetFolder()
@@ -57,49 +57,52 @@ public class Preset
 		return this.presetFolder;
 	}
 
-	public String getFolderName()
+	@Override
+	public String getId()
 	{
 		return this.presetFolderName;
 	}
 
+	@Override
 	public String getShortPresetName()
 	{
 		return this.shortPresetName;
 	}
 
+	@Override
 	public IWorldConfig getWorldConfig()
 	{
 		return this.worldConfig;
 	}
 	
+	@Override
 	public IBiomeConfig getBiomeConfig(String biomeName)
 	{
 		return this.biomeConfigs.get(biomeName);
 	}
 
+	@Override
+	public IMapImageProvider getMapImageSource()
+	{
+		return new FileMapImageProvider(this.getPresetFolder(), this.getWorldConfig().getImageFile());
+	}
+
+	@Override
 	public ArrayList<IBiomeConfig> getAllBiomeConfigs()
 	{
-		return new ArrayList<IBiomeConfig>(this.biomeConfigs.values());
+		return new ArrayList<>(this.biomeConfigs.values());
 	}
 	
+	@Override
 	public ArrayList<String> getAllBiomeNames()
 	{
-		return new ArrayList<String>(this.biomeConfigs.keySet());
+		return new ArrayList<>(this.biomeConfigs.keySet());
 		
 	}
 	
+	@Override
 	public int getMajorVersion()
 	{
 		return this.majorVersion;
-	}
-
-	public String getAuthor()
-	{
-		return this.author;
-	}
-
-	public String getDescription()
-	{
-		return this.description;
 	}
 }

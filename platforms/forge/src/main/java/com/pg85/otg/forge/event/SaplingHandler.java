@@ -12,13 +12,7 @@ import com.pg85.otg.customobject.resource.SaplingResource;
 import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.forge.materials.ForgeMaterialData;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.ILogger;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IModLoadedChecker;
-import com.pg85.otg.interfaces.ISaplingSpawner;
-import com.pg85.otg.interfaces.IWorldGenRegion;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.LocalMaterials;
 import com.pg85.otg.util.minecraft.SaplingType;
@@ -46,12 +40,12 @@ public class SaplingHandler
 		
         BlockPos blockPos = event.getPos();
 		ForgeWorldGenRegion worldGenRegion;	
-		Preset preset;
+		IPreset preset;
 		if(((ServerWorld)event.getWorld()).getChunkSource().generator instanceof OTGNoiseChunkGenerator)
 		{
 			preset = ((OTGNoiseChunkGenerator)((ServerWorld)event.getWorld()).getChunkSource().generator).getPreset();
 			worldGenRegion = new ForgeWorldGenRegion(
-				preset.getFolderName(), 
+				preset.getId(),
 				preset.getWorldConfig(), 
 				(ServerWorld)event.getWorld(), 
 				((OTGNoiseChunkGenerator)((ServerWorld)event.getWorld()).getChunkSource().generator)
@@ -65,7 +59,7 @@ public class SaplingHandler
 		ILogger logger = OTG.getEngine().getLogger();
 		Path otgRootFolder = OTG.getEngine().getOTGRootFolder();
 		IModLoadedChecker modLoadedChecker = OTG.getEngine().getModLoadedChecker();		
-		IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName());
+		IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId());
 
         IBiomeConfig biomeConfig = worldGenRegion.getCachedBiomeProvider().getBiomeConfig(blockPos.getX(), blockPos.getZ());
         ForgeMaterialData material = (ForgeMaterialData)worldGenRegion.getMaterial(blockPos.getX(), blockPos.getY(), blockPos.getZ());
@@ -134,7 +128,7 @@ public class SaplingHandler
         Random random = new Random();
         for (int i = 0; i < 10; i++)
         {
-            if (((SaplingResource)sapling).growSapling(worldGenRegion, random, wideTrunk, blockPos.getX(), blockPos.getY(), blockPos.getZ(), preset.getFolderName(), otgRootFolder, logger, customObjectManager, materialReader, customObjectResourcesManager, modLoadedChecker))
+            if (((SaplingResource)sapling).growSapling(worldGenRegion, random, wideTrunk, blockPos.getX(), blockPos.getY(), blockPos.getZ(), preset.getId(), otgRootFolder, logger, customObjectManager, materialReader, customObjectResourcesManager, modLoadedChecker))
             {
                 saplingGrown = true;
                 break;
@@ -169,12 +163,12 @@ public class SaplingHandler
 
         BlockPos blockPos = event.getPos();        
 		IWorldGenRegion worldGenRegion;	
-		Preset preset;
+		IPreset preset;
 		if(((ServerWorld)event.getWorld()).getChunkSource().generator instanceof OTGNoiseChunkGenerator)
 		{
 			preset = ((OTGNoiseChunkGenerator)((ServerWorld)event.getWorld()).getChunkSource().generator).getPreset();
 			worldGenRegion = new ForgeWorldGenRegion(
-				preset.getFolderName(), 
+				preset.getId(),
 				preset.getWorldConfig(), 
 				(ServerWorld)event.getWorld(), 
 				((OTGNoiseChunkGenerator)((ServerWorld)event.getWorld()).getChunkSource().generator)
@@ -188,7 +182,7 @@ public class SaplingHandler
 		ILogger logger = OTG.getEngine().getLogger();
 		Path otgRootFolder = OTG.getEngine().getOTGRootFolder();
 		IModLoadedChecker modLoadedChecker = OTG.getEngine().getModLoadedChecker();		
-		IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName());		
+		IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId());
 		
         IBiomeConfig biomeConfig = worldGenRegion.getCachedBiomeProvider().getBiomeConfig(blockPos.getX(), blockPos.getZ());	
 
@@ -222,7 +216,7 @@ public class SaplingHandler
         Random random = new Random();
         for (int i = 0; i < 10; i++)
         {
-        	if (((SaplingResource)sapling).growSapling(worldGenRegion, random, false, blockPos.getX(), blockPos.getY(), blockPos.getZ(), preset.getFolderName(), otgRootFolder, logger, customObjectManager, materialReader, customObjectResourcesManager, modLoadedChecker))
+        	if (((SaplingResource)sapling).growSapling(worldGenRegion, random, false, blockPos.getX(), blockPos.getY(), blockPos.getZ(), preset.getId(), otgRootFolder, logger, customObjectManager, materialReader, customObjectResourcesManager, modLoadedChecker))
             {
                 mushroomGrown = true;
                 break;

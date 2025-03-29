@@ -131,7 +131,7 @@ public class BiomeConfig extends BiomeConfigBase
 	)
 	{
 		super(biomeName);
-		this.setRegistryKey(new OTGBiomeResourceLocation(presetFolder, presetShortName, presetMajorVersion, biomeName));
+		this.setRegistryKey(new OTGBiomeResourceLocation(presetFolder.toFile().getName(), presetShortName, presetMajorVersion, biomeName));
 
 		// Mob inheritance
 		// Mob spawning data was already loaded seperately before the rest of the

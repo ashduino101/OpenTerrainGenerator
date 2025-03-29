@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.pg85.otg.interfaces.IPreset;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -22,7 +23,7 @@ import com.pg85.otg.constants.SettingsEnums.CustomStructureType;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.bo4.BO4;
 import com.pg85.otg.customobject.structures.CustomStructureCache;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.gen.MCWorldGenRegion;
 import com.pg85.otg.spigot.gen.OTGSpigotChunkGen;
 import com.pg85.otg.spigot.gen.SpigotWorldGenRegion;
@@ -83,7 +84,7 @@ public class SpawnCommand extends BaseCommand
 		{
 			block = player.getLocation().getBlock();
 		}
-		Preset preset = ObjectUtils.getPresetOrDefault(presetName);
+		IPreset preset = ObjectUtils.getPresetOrDefault(presetName);
 		SpigotWorldGenRegion genRegion = ObjectUtils.getWorldGenRegion(preset, (CraftWorld) player.getWorld());
 
 		if(objectToSpawn instanceof BO4)
@@ -110,11 +111,11 @@ public class SpawnCommand extends BaseCommand
         		int x = playerChunk.getBlockX() + ((BO4)objectToSpawn).getConfig().getminX();
         		int z = playerChunk.getBlockZ() + ((BO4)objectToSpawn).getConfig().getminZ();
         		((BO4)objectToSpawn).trySpawnAt(
-    				preset.getFolderName(), 
+    				preset.getId(),
     				OTG.getEngine().getOTGRootFolder(), 
     				OTG.getEngine().getLogger(), 
     				OTG.getEngine().getCustomObjectManager(), 
-    				OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), 
+    				OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
     				OTG.getEngine().getCustomObjectResourcesManager(), 
     				null, 
     				genRegion, 
@@ -173,7 +174,7 @@ public class SpawnCommand extends BaseCommand
                     					OTG.getEngine().getOTGRootFolder(),
                     					OTG.getEngine().getLogger(), 
                     					OTG.getEngine().getCustomObjectManager(), 
-                    					OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), 
+                    					OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
                     					OTG.getEngine().getCustomObjectResourcesManager(), 
                     					OTG.getEngine().getModLoadedChecker(), 
                     					force

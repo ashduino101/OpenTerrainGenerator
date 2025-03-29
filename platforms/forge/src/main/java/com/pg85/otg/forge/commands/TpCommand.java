@@ -14,7 +14,8 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.biome.OTGBiomeResourceLocation;
 
 import net.minecraft.command.CommandSource;
@@ -71,9 +72,9 @@ public class TpCommand extends BaseCommand
 			return 0;
 		}
 
-		Preset preset = ((OTGNoiseChunkGenerator) world.getChunkSource().generator).getPreset();
+		IPreset preset = ((OTGNoiseChunkGenerator) world.getChunkSource().generator).getPreset();
 
-		ResourceLocation key = new ResourceLocation(new OTGBiomeResourceLocation(preset.getPresetFolder(),
+		ResourceLocation key = new ResourceLocation(new OTGBiomeResourceLocation(preset.getId(),
 				preset.getShortPresetName(), preset.getMajorVersion(), biome).toResourceLocationString());
 
 		BlockPos pos = world.findNearestBiome(world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).get(key),

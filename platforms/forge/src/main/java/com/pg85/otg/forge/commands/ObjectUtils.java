@@ -13,7 +13,7 @@ import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
 import com.pg85.otg.forge.gen.MCWorldGenRegion;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.forge.util.ForgeNBTHelper;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.gen.LocalWorldGenRegion;
 import com.pg85.otg.util.materials.LocalMaterials;
@@ -55,7 +55,7 @@ public class ObjectUtils
 	 * @param presetName The name of the preset to fetch
 	 * @return The preset
 	 */
-	public static Preset getPresetOrDefault(String presetName)
+	public static IPreset getPresetOrDefault(String presetName)
 	{
 		if (presetName == null)
 		{
@@ -256,19 +256,19 @@ public class ObjectUtils
 		};
 	}
 
-	protected static ForgeWorldGenRegion getWorldGenRegion(Preset preset, ServerWorld level)
+	protected static ForgeWorldGenRegion getWorldGenRegion(IPreset preset, ServerWorld level)
 	{
 		if(level.getChunkSource().getGenerator() instanceof OTGNoiseChunkGenerator)
 		{
 			return new ForgeWorldGenRegion(
-				preset.getFolderName(),
+				preset.getId(),
 				preset.getWorldConfig(),
 				level,
 				(OTGNoiseChunkGenerator)level.getChunkSource().getGenerator()
 			);
 		} else {
 			return new MCWorldGenRegion(
-				preset.getFolderName(),
+				preset.getId(),
 				preset.getWorldConfig(),
 				level
 			);

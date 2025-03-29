@@ -5,7 +5,9 @@ import java.io.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.pg85.otg.OTG;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PackedPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.presets.PresetPacker;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
@@ -41,19 +43,25 @@ public class ExportPresetPackCommand extends BaseCommand
             return 0;
         }
 
-        Preset preset = ((OTGNoiseChunkGenerator)source.getLevel().getChunkSource().generator).getPreset();
+        IPreset preset = ((OTGNoiseChunkGenerator)source.getLevel().getChunkSource().generator).getPreset();
+
+        if (!(preset instanceof PresetFolder)) {
+            source.sendSuccess(new StringTextComponent("Only unpacked presets can be packed."), false);
+            return 0;
+        }
+
         if (!isRunning)
         {
             isRunning = true;
             source.sendSuccess(new StringTextComponent("Packing preset for distribution, this might take a while..."), false);
             source.sendSuccess(new StringTextComponent("Run this command again to see progress."), false);
             new Thread(() -> {
-                String outputPath = OTG.getEngine().getPresetsDirectory() + "/" + preset.getFolderName() + ".preset";
+                String outputPath = OTG.getEngine().getPresetsDirectory() + "/" + preset.getId() + ".preset";
                 try (FileOutputStream file = new FileOutputStream(outputPath))
                 {
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("Packing preset to %s", outputPath));
 
-                    PresetPacker.packToFile(preset, file, OTG.getEngine().getLogger());
+                    PresetPacker.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
 
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Preset export complete.");
                     source.sendSuccess(new StringTextComponent("OTG preset export is done."), false);

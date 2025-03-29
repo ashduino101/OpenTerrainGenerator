@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.interfaces.IBiomeResourceLocation;
+import com.pg85.otg.interfaces.IPreset;
 
 public class OTGBiomeResourceLocation implements IBiomeResourceLocation
 {
@@ -16,19 +17,24 @@ public class OTGBiomeResourceLocation implements IBiomeResourceLocation
 	private final String biomeName;
 	private final String resourceName;
 
-	public OTGBiomeResourceLocation(Path presetFolder, String presetShortName, int presetMajorVersion, String biomeName, String resourceName)
+	public OTGBiomeResourceLocation(String presetFolderName, String presetShortName, int presetMajorVersion, String biomeName, String resourceName)
 	{
 		this.presetMajorVersion = presetMajorVersion;
-		this.presetFolder = presetFolder.toFile().getName();
+		this.presetFolder = presetFolderName;
 		this.presetShortName = presetShortName != null && presetShortName.trim().length() > 0 ? presetShortName : this.presetFolder;		
 		this.presetRegistryName = this.presetShortName.toLowerCase().trim().replaceAll("[^a-z0-9/_-]", "_");
 		this.biomeName = biomeName.toLowerCase().trim().replaceAll("[^a-z0-9/_-]", "_");
 		this.resourceName = resourceName;
 	}
 
-	public OTGBiomeResourceLocation(Path presetFolder, String presetShortName, int presetMajorVersion, String biomeName)
+	public OTGBiomeResourceLocation(IPreset preset, String biomeName)
 	{
-		this(presetFolder, presetShortName, presetMajorVersion, biomeName, null);
+		this(preset.getId(), preset.getShortPresetName(), preset.getMajorVersion(), biomeName, null);
+	}
+
+	public OTGBiomeResourceLocation(String presetFolderName, String presetShortName, int presetMajorVersion, String biomeName)
+	{
+		this(presetFolderName, presetShortName, presetMajorVersion, biomeName, null);
 	}
 	
 	public IBiomeResourceLocation withBiomeResource(String resourceName)

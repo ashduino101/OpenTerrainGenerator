@@ -3,6 +3,7 @@ package com.pg85.otg.spigot.events;
 import java.nio.file.Path;
 import java.util.Random;
 
+import com.pg85.otg.interfaces.*;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.event.world.StructureGrowEvent;
 
@@ -10,13 +11,7 @@ import com.pg85.otg.OTG;
 import com.pg85.otg.customobject.CustomObjectManager;
 import com.pg85.otg.customobject.config.CustomObjectResourcesManager;
 import com.pg85.otg.customobject.resource.SaplingResource;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.ILogger;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IModLoadedChecker;
-import com.pg85.otg.interfaces.ISaplingSpawner;
-import com.pg85.otg.interfaces.IWorldGenRegion;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.gen.OTGSpigotChunkGen;
 import com.pg85.otg.spigot.gen.SpigotWorldGenRegion;
 import com.pg85.otg.spigot.materials.SpigotMaterialData;
@@ -37,12 +32,12 @@ public class SaplingHandler
 		
         BlockPosition blockPos = new BlockPosition(event.getLocation().getBlockX(), event.getLocation().getBlockY(), event.getLocation().getBlockZ());
 		SpigotWorldGenRegion worldGenRegion;
-		Preset preset;
+		IPreset preset;
 		if(((CraftWorld)event.getWorld()).getGenerator() instanceof OTGSpigotChunkGen)
 		{
 			preset = ((OTGSpigotChunkGen)((CraftWorld)event.getWorld()).getGenerator()).generator.getPreset();
 			worldGenRegion = new SpigotWorldGenRegion(
-				preset.getFolderName(), 
+				preset.getId(),
 				preset.getWorldConfig(), 
 				((CraftWorld)event.getWorld()).getHandle(),
 				((OTGSpigotChunkGen)((CraftWorld)event.getWorld()).getGenerator()).generator
@@ -56,7 +51,7 @@ public class SaplingHandler
 		ILogger logger = OTG.getEngine().getLogger();
 		Path otgRootFolder = OTG.getEngine().getOTGRootFolder();
 		IModLoadedChecker modLoadedChecker = OTG.getEngine().getModLoadedChecker();		
-		IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName());
+		IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId());
 
         IBiomeConfig biomeConfig = worldGenRegion.getCachedBiomeProvider().getBiomeConfig(blockPos.getX(), blockPos.getZ());
         SpigotMaterialData material = (SpigotMaterialData)worldGenRegion.getMaterial(blockPos.getX(), blockPos.getY(), blockPos.getZ());
@@ -125,7 +120,7 @@ public class SaplingHandler
         Random random = new Random();
         for (int i = 0; i < 10; i++)
         {
-            if (((SaplingResource)sapling).growSapling(worldGenRegion, random, wideTrunk, blockPos.getX(), blockPos.getY(), blockPos.getZ(), preset.getFolderName(), otgRootFolder, logger, customObjectManager, materialReader, customObjectResourcesManager, modLoadedChecker))
+            if (((SaplingResource)sapling).growSapling(worldGenRegion, random, wideTrunk, blockPos.getX(), blockPos.getY(), blockPos.getZ(), preset.getId(), otgRootFolder, logger, customObjectManager, materialReader, customObjectResourcesManager, modLoadedChecker))
             {
                 saplingGrown = true;
                 break;

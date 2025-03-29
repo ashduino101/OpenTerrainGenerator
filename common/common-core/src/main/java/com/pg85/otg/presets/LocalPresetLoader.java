@@ -1,7 +1,6 @@
 package com.pg85.otg.presets;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -22,6 +21,7 @@ import com.pg85.otg.config.world.WorldConfig;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
+import com.pg85.otg.interfaces.IPreset;
 import com.pg85.otg.interfaces.IWorldConfig;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
@@ -37,7 +37,7 @@ public abstract class LocalPresetLoader
 	private static final int MAX_INHERITANCE_DEPTH = 15;
 	protected final Object materialReaderLock = new Object();
 	protected final File presetsDir;
-	protected final HashMap<String, Preset> presets = new HashMap<>();
+	protected final HashMap<String, IPreset> presets = new HashMap<>();
 	protected final HashMap<String, String> aliasMap = new HashMap<>();
 	protected HashMap<String, IMaterialReader> materialReaderByPresetFolderName = new HashMap<>();
 
@@ -70,7 +70,7 @@ public abstract class LocalPresetLoader
 	
 	protected abstract void mergeVanillaBiomeMobSpawnSettings(BiomeConfigStub biomeConfigStub, String inheritMobsBiomeName);
 	
-	public Preset getPresetByShortNameOrFolderName(String name)
+	public IPreset getPresetByShortNameOrFolderName(String name)
 	{
 		// Example: preset is stored as "Biome Bundle v7", but also accepts "Biome Bundle"
 		if (aliasMap.containsKey(name))
@@ -80,14 +80,14 @@ public abstract class LocalPresetLoader
 		return this.presets.get(name);
 	}
 	
-	public Preset getPresetByFolderName(String name)
+	public IPreset getPresetByFolderName(String name)
 	{
 		return this.presets.get(name);
 	}
 
-	public ArrayList<Preset> getAllPresets()
+	public ArrayList<IPreset> getAllPresets()
 	{
-		return new ArrayList<Preset>(presets.values());
+		return new ArrayList<>(presets.values());
 	}
 
 	public Set<String> getAllPresetFolderNames()
@@ -112,22 +112,22 @@ public abstract class LocalPresetLoader
 					{
 						if(file.getName().equals(Constants.WORLD_CONFIG_FILE))
 						{
-							Preset preset = loadPreset(presetDir.toPath(), biomeResourcesManager, logger);
-							this.presets.put(preset.getFolderName(), preset);
-							this.aliasMap.put(preset.getShortPresetName(), preset.getFolderName());
+							PresetFolder preset = loadPreset(presetDir.toPath(), biomeResourcesManager, logger);
+							this.presets.put(preset.getId(), preset);
+							this.aliasMap.put(preset.getShortPresetName(), preset.getId());
 							break;
 						}
 					}
 				}
 				else if (presetDir.getName().endsWith(".preset")) {
 					try {
-						Preset preset = PackedPresetLoader.loadPresetFromPack(presetDir);
-						if (this.presets.containsKey(preset.getFolderName())) {
+						IPreset preset = PackedPreset.loadPresetFromPack(presetDir);
+						if (this.presets.containsKey(preset.getId())) {
 							logger.log(LogLevel.WARN, LogCategory.MAIN, String.format("Multiple preset formats exist for %s, discarding packed preset in favor of original", preset.getShortPresetName()));
 							continue;
 						}
-						this.presets.put(preset.getFolderName(), preset);
-						this.aliasMap.put(preset.getShortPresetName(), preset.getFolderName());
+						this.presets.put(preset.getId(), preset);
+						this.aliasMap.put(preset.getShortPresetName(), preset.getId());
 					} catch (Exception e) {
 						StringWriter sw = new StringWriter();
 						PrintWriter pw = new PrintWriter(sw);
@@ -140,7 +140,7 @@ public abstract class LocalPresetLoader
 		}
 	}
 	
-	protected Preset loadPreset(Path presetDir, IConfigFunctionProvider biomeResourcesManager, ILogger logger)
+	protected PresetFolder loadPreset(Path presetDir, IConfigFunctionProvider biomeResourcesManager, ILogger logger)
 	{
 		File worldConfigFile = new File(presetDir.toString(), Constants.WORLD_CONFIG_FILE);
 		File biomesDirectory = new File(presetDir.toString(), Constants.WORLD_BIOMES_FOLDER);
@@ -157,7 +157,7 @@ public abstract class LocalPresetLoader
 		// use shortPresetName to register the biomes, instead of presetName
 		ArrayList<BiomeConfig> biomeConfigs = loadBiomeConfigs(worldConfig.getShortPresetName(), worldConfig.getMajorVersion(), presetDir, biomesDirectory.toPath(), worldConfig, biomeResourcesManager, logger, getMaterialReader(presetFolderName));
 
-		return new Preset(presetDir, worldConfig.getShortPresetName(), worldConfig, biomeConfigs);
+		return new PresetFolder(presetDir, worldConfig.getShortPresetName().isEmpty() ? presetFolderName : worldConfig.getShortPresetName(), worldConfig, biomeConfigs);
 	}
 	
 	private ArrayList<String> addBiomesFromDirRecursive(File biomesDirectory)

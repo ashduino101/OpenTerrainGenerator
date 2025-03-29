@@ -27,11 +27,8 @@ import com.pg85.otg.forge.commands.arguments.PresetArgument;
 import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
 import com.pg85.otg.forge.materials.ForgeMaterialData;
 import com.pg85.otg.forge.util.ForgeNBTHelper;
-import com.pg85.otg.interfaces.ICustomObjectManager;
-import com.pg85.otg.interfaces.ILogger;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IModLoadedChecker;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.*;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.LocalMaterialData;
@@ -140,10 +137,14 @@ public class EditCommand extends BaseCommand
 
 			ObjectType type = inputObject.getType();
 
-			Preset preset = ObjectUtils.getPresetOrDefault(presetFolderName);
+			IPreset preset = ObjectUtils.getPresetOrDefault(presetFolderName);
 			if (preset == null)
 			{
 				source.sendSuccess(new StringTextComponent("Could not find preset " + (presetFolderName == null ? "" : presetFolderName)), false);
+				return 0;
+			}
+			if (!(preset instanceof PresetFolder)) {
+				source.sendSuccess(new StringTextComponent("Only unpacked presets can be edited."), false);
 				return 0;
 			}
 
@@ -165,7 +166,7 @@ public class EditCommand extends BaseCommand
 				OTG.getEngine().getPresetLoader().getMaterialReader(presetFolderName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 
 			// Save the object and clean the area
-			Path path = ObjectUtils.getObjectFolderPath(isGlobal ? null : preset.getPresetFolder())
+			Path path = ObjectUtils.getObjectFolderPath(isGlobal ? null : ((PresetFolder) preset).getPresetFolder())
 				.resolve(ObjectUtils.getFoldersFromObject(inputObject));
 			if (immediate)
 			{
@@ -175,7 +176,7 @@ public class EditCommand extends BaseCommand
 			}
 			// Store the info, wait for /otg finishedit
 			sessionsMap.put(source.getEntity(), new EditSession(type, worldGenRegion, inputObject, extraBlocks,
-				path, preset.getFolderName(), center, leaveIllegalLeaves));
+				path, preset.getId(), center, leaveIllegalLeaves));
 			source.sendSuccess(new StringTextComponent("You can now edit the object"), false);
 			source.sendSuccess(new StringTextComponent("To change the area of the object, use /otg region"), false);
 			source.sendSuccess(new StringTextComponent("When you are done editing, do /otg finishedit"), false);

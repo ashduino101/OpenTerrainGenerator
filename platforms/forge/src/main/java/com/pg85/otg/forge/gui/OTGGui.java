@@ -57,7 +57,7 @@ public class OTGGui
 			currentSelection = DimensionConfig.createDefaultConfig();
 			if(!OTG.getEngine().getPresetLoader().getAllPresets().isEmpty())
 			{
-				currentSelection.Overworld = new OTGOverWorld(OTG.getEngine().getPresetLoader().getDefaultPresetFolderName(), seed, null, null);
+				currentSelection.Overworld = new OTGOverWorld(OTG.getEngine().getPresetLoader().getDefaultPresetFolderName(), OTG.getEngine().getPresetLoader().getDefaultPresetFolderName(), seed, null, null);
 				return new OTGNoiseChunkGenerator(new OTGBiomeProvider(OTG.getEngine().getPresetLoader().getDefaultPresetFolderName(), seed, false, false, biomes), seed, () -> dimensionSettings.getOrThrow(DimensionSettings.OVERWORLD));
 			} else {
 				// If no presets are installed, return the default chunkgenerator / biomeprovider

@@ -1877,9 +1877,9 @@ public class BO4Config extends CustomObjectConfigFile
 						metaDataNames[i] = StreamHelper.readStringFromBuffer(bufferDecompressed);
 					}
 					
-					short blocksArrArrLength = bufferDecompressed.getShort();
-					LocalMaterialData[] blocksArr = new LocalMaterialData[blocksArrArrLength];
-					for(int i = 0; i < blocksArrArrLength; i++)
+					short blocksArrLength = bufferDecompressed.getShort();
+					LocalMaterialData[] blocksArr = new LocalMaterialData[blocksArrLength];
+					for(int i = 0; i < blocksArrLength; i++)
 					{
 						String materialName = StreamHelper.readStringFromBuffer(bufferDecompressed);
 						try {

@@ -1,5 +1,6 @@
 package com.pg85.otg.customobject.bo3.checks;
 
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.List;
@@ -62,6 +63,17 @@ public class ModCheck extends BO3Check
 		stream.writeShort(this.mods.length);
 		for (String mod : this.mods) {
 			stream.writeUTF(mod);
+		}
+	}
+
+	/**
+	 * Reads the mod list from a stream.
+	 */
+	public void readModsFromStream(DataInput stream) throws IOException {
+		short num = stream.readShort();
+		this.mods = new String[num];
+		for (int i = 0; i < num; i++) {
+			this.mods[i] = stream.readUTF();
 		}
 	}
 

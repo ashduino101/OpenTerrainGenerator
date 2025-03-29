@@ -42,9 +42,9 @@ public class DimensionConfig
 	public static DimensionConfig createDefaultConfig()
 	{
 		DimensionConfig config = new DimensionConfig();
-		config.Overworld = new OTGOverWorld(null, -1, null, null);
-		config.Nether = new OTGDimension(null, -1);
-		config.End = new OTGDimension(null, -1);
+		config.Overworld = new OTGOverWorld(null, null, -1, null, null);
+		config.Nether = new OTGDimension(null, null, -1);
+		config.End = new OTGDimension(null, null, -1);
 		return config;
 	}
 	
@@ -142,22 +142,23 @@ public class DimensionConfig
 			super();
 		}
 
-		public OTGOverWorld(String presetFolderName, long seed, String nonOTGWorldType, String nonOTGGeneratorSettings)
+		public OTGOverWorld(String presetFolderName, String shortName, long seed, String nonOTGWorldType, String nonOTGGeneratorSettings)
 		{
-			super(presetFolderName, seed);
+			super(presetFolderName, shortName, seed);
 			this.NonOTGWorldType = nonOTGWorldType;
 			this.NonOTGGeneratorSettings = nonOTGGeneratorSettings;
 		}
 		
 		public OTGOverWorld clone()
 		{
-			return new OTGOverWorld(this.PresetFolderName, this.Seed, this.NonOTGWorldType, this.NonOTGGeneratorSettings);
+			return new OTGOverWorld(this.PresetFolderName, this.ShortName, this.Seed, this.NonOTGWorldType, this.NonOTGGeneratorSettings);
 		}
 	}
 
 	public static class OTGDimension
 	{
 		public String PresetFolderName;
+		public String ShortName;
 		public long Seed;
 		public String PortalBlocks;
 		public String PortalColor;
@@ -166,15 +167,16 @@ public class DimensionConfig
 
 		public OTGDimension() {}
 		
-		public OTGDimension(String presetFolderName, long seed)
+		public OTGDimension(String presetFolderName, String shortName, long seed)
 		{
 			this.PresetFolderName = presetFolderName;
+			this.ShortName = shortName;
 			this.Seed = seed;
 		}
 		
 		public OTGDimension clone()
 		{
-			OTGDimension otgDimension = new OTGDimension(this.PresetFolderName, this.Seed);
+			OTGDimension otgDimension = new OTGDimension(this.PresetFolderName, this.ShortName, this.Seed);
 			otgDimension.PortalBlocks = this.PortalBlocks;
 			otgDimension.PortalColor = this.PortalColor;
 			otgDimension.PortalMob = this.PortalMob;

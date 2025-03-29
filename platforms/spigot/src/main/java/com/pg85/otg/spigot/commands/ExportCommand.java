@@ -7,7 +7,8 @@ import com.pg85.otg.customobject.creator.ObjectCreator;
 import com.pg85.otg.customobject.creator.ObjectType;
 import com.pg85.otg.customobject.structures.StructuredCustomObject;
 import com.pg85.otg.customobject.util.Corner;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.commands.RegionCommand.Region;
 import com.pg85.otg.spigot.gen.SpigotWorldGenRegion;
 import com.pg85.otg.spigot.materials.SpigotMaterialData;
@@ -176,13 +177,18 @@ public class ExportCommand extends BaseCommand
 			isStructure = true;
 		}
 
-		Preset preset = ObjectUtils.getPresetOrDefault(presetName);
+		IPreset preset = ObjectUtils.getPresetOrDefault(presetName);
 		if (preset == null)
 		{
 			source.sendMessage("Could not find preset " + (presetName == null ? "" : presetName));
 			return true;
 		}
-		Path objectPath = ObjectUtils.getObjectFolderPath(isGlobal ? null : preset.getPresetFolder());
+		if (!(preset instanceof PresetFolder))
+		{
+			source.sendMessage("Only unpacked presets can have objects exported.");
+			return true;
+		}
+		Path objectPath = ObjectUtils.getObjectFolderPath(isGlobal ? null : ((PresetFolder) preset).getPresetFolder());
 		if (!overwrite && (new File(objectPath.toFile(), objectName + ".bo3")).exists() && (new File(objectPath.toFile(), objectName + "." + type.getType())).exists())
 		{
 			source.sendMessage("File already exists, run command with flag '-o' to overwrite");
@@ -203,7 +209,7 @@ public class ExportCommand extends BaseCommand
 			new File(type.getFileNameForTemplate(templateName)),
 			OTG.getEngine().getLogger());
 
-		if (!template.onEnable(preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker()))
+		if (!template.onEnable(preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker()))
 		{
 			source.sendMessage("Failed to load template \"" + templateName + "\"");
 			return true;
@@ -225,9 +231,9 @@ public class ExportCommand extends BaseCommand
 					}
 				}
 			}
-			object = ObjectCreator.create(type, lowCorner, highCorner, center, centerBlock, objectName, includeAir, isStructure, false, objectPath, worldGenRegion, nbtHelper, null, template.getConfig(), preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), excludes);
+			object = ObjectCreator.create(type, lowCorner, highCorner, center, centerBlock, objectName, includeAir, isStructure, false, objectPath, worldGenRegion, nbtHelper, null, template.getConfig(), preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), excludes);
 		} else {
-			object = ObjectCreator.create(type, lowCorner, highCorner, center, centerBlock, objectName, includeAir, isStructure, false, objectPath, worldGenRegion, nbtHelper, null, template.getConfig(), preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+			object = ObjectCreator.create(type, lowCorner, highCorner, center, centerBlock, objectName, includeAir, isStructure, false, objectPath, worldGenRegion, nbtHelper, null, template.getConfig(), preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 		}
 		if (object != null)
 		{
@@ -238,7 +244,7 @@ public class ExportCommand extends BaseCommand
 			}
 			else
 			{
-				OTG.getEngine().getCustomObjectManager().getGlobalObjects().addObjectToPreset(preset.getFolderName(), object.getName().toLowerCase(Locale.ROOT), object.getConfig().getFile(), object);
+				OTG.getEngine().getCustomObjectManager().getGlobalObjects().addObjectToPreset(preset.getId(), object.getName().toLowerCase(Locale.ROOT), object.getConfig().getFile(), object);
 			}
 		}
 		else

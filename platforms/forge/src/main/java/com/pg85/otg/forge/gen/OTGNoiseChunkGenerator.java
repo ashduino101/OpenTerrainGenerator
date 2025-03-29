@@ -27,12 +27,7 @@ import com.pg85.otg.forge.biome.ForgeBiome;
 import com.pg85.otg.forge.biome.OTGBiomeProvider;
 import com.pg85.otg.gen.OTGChunkGenerator;
 import com.pg85.otg.gen.OTGChunkDecorator;
-import com.pg85.otg.interfaces.IBiome;
-import com.pg85.otg.interfaces.ICachedBiomeProvider;
-import com.pg85.otg.interfaces.ILayerSource;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IWorldConfig;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.ChunkCoordinate;
 import com.pg85.otg.util.gen.ChunkBuffer;
 import com.pg85.otg.util.gen.JigsawStructureData;
@@ -90,7 +85,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 				.group(
 					Codec.STRING.fieldOf("preset_folder_name").forGetter(
 						(p_236090_0_) -> {
-							return p_236090_0_.preset.getFolderName();
+							return p_236090_0_.preset.getId();
 						}
 					),
 					Codec.STRING.fieldOf("dim_config_name").forGetter(
@@ -118,7 +113,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 	private final ShadowChunkGenerator shadowChunkGenerator;
 	private final OTGChunkGenerator internalGenerator;
 	private final OTGChunkDecorator chunkDecorator;
-	private final Preset preset;
+	private final IPreset preset;
 	private final String dimConfigName;
 	private final DimensionConfig dimConfig;
 	private CustomStructureCache structureCache; // TODO: Move this?
@@ -167,7 +162,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 	
 	private static Supplier<DimensionSettings> overrideStructureSettings(DimensionSettings oldSettings, String presetFolderName)
 	{
-		Preset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
+		IPreset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
 		IWorldConfig worldConfig = preset.getWorldConfig();
 
 		Builder<Structure<?>, StructureSeparationSettings> separationSettings = ImmutableMap.<Structure<?>, StructureSeparationSettings>builder();
@@ -295,7 +290,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 		}
 	}
 
-	public Preset getPreset()
+	public IPreset getPreset()
 	{
 		return this.preset;
 	}
@@ -304,7 +299,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 	@Override
 	public ChunkGenerator withSeed(long seed)
 	{
-		return new OTGNoiseChunkGenerator(this.preset.getFolderName(), this.dimConfigName, this.biomeSource.withSeed(seed), seed, this.settings);
+		return new OTGNoiseChunkGenerator(this.preset.getId(), this.dimConfigName, this.biomeSource.withSeed(seed), seed, this.settings);
 	}
 
 	@Override
@@ -529,7 +524,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 		//
 
 		ChunkCoordinate chunkBeingDecorated = ChunkCoordinate.fromBlockCoords(worldX, worldZ);
-		ForgeWorldGenRegion forgeWorldGenRegion = new ForgeWorldGenRegion(this.preset.getFolderName(), this.preset.getWorldConfig(), worldGenRegion, this);
+		ForgeWorldGenRegion forgeWorldGenRegion = new ForgeWorldGenRegion(this.preset.getId(), this.preset.getWorldConfig(), worldGenRegion, this);
 		IBiome biome = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((worldGenRegion.getCenterX() << 2) + 2, (worldGenRegion.getCenterZ() << 2) + 2);
 		IBiome biome1 = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((worldGenRegion.getCenterX() << 2), (worldGenRegion.getCenterZ() << 2));
 		IBiome biome2 = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((worldGenRegion.getCenterX() << 2), (worldGenRegion.getCenterZ() << 2) + 4);
@@ -579,7 +574,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 			 * - Frank
 			 */
 			List<Integer> alreadyDecorated = new ArrayList<>();
-			this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, forgeWorldGenRegion, biome.getBiomeConfig(), getStructureCache(worldSaveFolder));
+			this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, forgeWorldGenRegion, biome.getBiomeConfig(), getStructureCache(worldSaveFolder));
 			((ForgeBiome)biome).getBiomeBase().generate(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
 			alreadyDecorated.add(biome.getBiomeConfig().getOTGBiomeId());
 			// Attempt to decorate other biomes if ImprovedBiomeDecoration - Frank
@@ -587,7 +582,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 			{
 				if (!alreadyDecorated.contains(biome1.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, forgeWorldGenRegion, biome1.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, forgeWorldGenRegion, biome1.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					if (!alreadyDecorated.contains(biome1.getBiomeConfig().getOTGBiomeId()))
 					{
 						((ForgeBiome)biome1).getBiomeBase().generate(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
@@ -596,7 +591,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 				}
 				if (!alreadyDecorated.contains(biome2.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, forgeWorldGenRegion, biome2.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, forgeWorldGenRegion, biome2.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					if (!alreadyDecorated.contains(biome2.getBiomeConfig().getOTGBiomeId()))
 					{
 						((ForgeBiome)biome2).getBiomeBase().generate(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
@@ -605,7 +600,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 				}
 				if (!alreadyDecorated.contains(biome3.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, forgeWorldGenRegion, biome3.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, forgeWorldGenRegion, biome3.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					if (!alreadyDecorated.contains(biome3.getBiomeConfig().getOTGBiomeId()))
 					{
 						((ForgeBiome)biome3).getBiomeBase().generate(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
@@ -614,7 +609,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 				}
 				if (!alreadyDecorated.contains(biome4.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, forgeWorldGenRegion, biome4.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, forgeWorldGenRegion, biome4.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					if (!alreadyDecorated.contains(biome4.getBiomeConfig().getOTGBiomeId()))
 					{
 						((ForgeBiome)biome4).getBiomeBase().generate(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
@@ -737,7 +732,7 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 	{
 		if(this.structureCache == null)
 		{
-			this.structureCache = OTG.getEngine().createCustomStructureCache(this.preset.getFolderName(), worldSaveFolder, this.seed, this.preset.getWorldConfig().getCustomStructureType() == CustomStructureType.BO4);
+			this.structureCache = OTG.getEngine().createCustomStructureCache(this.preset.getId(), worldSaveFolder, this.seed, this.preset.getWorldConfig().getCustomStructureType() == CustomStructureType.BO4);
 		}
 		return this.structureCache;
 	}
@@ -808,10 +803,10 @@ public final class OTGNoiseChunkGenerator extends NoiseChunkGenerator
 			this.portalDataProcessed = true;
 			if(this.dimConfig != null)
 			{
-				IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(this.preset.getFolderName());
+				IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(this.preset.getId());
 				for(OTGDimension dim : this.dimConfig.Dimensions)
 				{
-					if(dim.PresetFolderName != null && this.preset.getFolderName().equals(dim.PresetFolderName))
+					if(dim.PresetFolderName != null && this.preset.getId().equals(dim.PresetFolderName))
 					{
 						if(dim.PortalBlocks != null && dim.PortalBlocks.trim().length() > 0)
 						{

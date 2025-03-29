@@ -3,11 +3,13 @@ package com.pg85.otg.spigot.commands;
 import java.util.Collections;
 import java.util.List;
 
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PackedPreset;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.entity.Player;
 
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.gen.OTGNoiseChunkGenerator;
 
 import net.minecraft.server.v1_16_R3.WorldServer;
@@ -37,10 +39,11 @@ public class PresetCommand extends BaseCommand
 			return true;
 		}
 
-		Preset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
-		sender.sendMessage("Preset: " + preset.getFolderName() + 
-				"\nDescription: " + preset.getDescription() + 
-				"\nMajor version: " + preset.getMajorVersion());
+		IPreset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
+		sender.sendMessage("Preset: " + preset.getId() +
+				"\nDescription: " + preset.getWorldConfig().getDescription() +
+				"\nMajor version: " + preset.getWorldConfig().getMajorVersion()
+				+ "\nPacked: " + ((preset instanceof PackedPreset) ? "yes" : "no"));
 		return true;
 	}
 

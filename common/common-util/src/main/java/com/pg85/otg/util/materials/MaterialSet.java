@@ -280,7 +280,7 @@ public class MaterialSet
 		for (int i = 0; i < numMaterials; i++) {
 			String materialName = stream.readUTF();
 			LocalMaterialData material = materialReader.readMaterial(materialName);
-			this.addTag(new MaterialSetEntry(material));
+			this.addMaterial(new MaterialSetEntry(material));
 		}
 	}
 

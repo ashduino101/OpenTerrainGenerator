@@ -9,7 +9,8 @@ import com.pg85.otg.customobject.creator.ObjectType;
 import com.pg85.otg.customobject.structures.StructuredCustomObject;
 import com.pg85.otg.customobject.util.BoundingBox;
 import com.pg85.otg.customobject.util.Corner;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.gen.MCWorldGenRegion;
 import com.pg85.otg.spigot.gen.OTGSpigotChunkGen;
 import com.pg85.otg.spigot.gen.SpigotWorldGenRegion;
@@ -55,7 +56,7 @@ public class ObjectUtils
 	 * @param presetName The name of the preset to fetch
 	 * @return The preset
 	 */
-	public static Preset getPresetOrDefault(String presetName)
+	public static IPreset getPresetOrDefault(String presetName)
 	{
 		if (presetName == null)
 		{
@@ -257,12 +258,12 @@ public class ObjectUtils
 		};
 	}
 
-	protected static SpigotWorldGenRegion getWorldGenRegion(Preset preset, CraftWorld level)
+	protected static SpigotWorldGenRegion getWorldGenRegion(IPreset preset, CraftWorld level)
 	{
 		if (level.getGenerator() instanceof OTGSpigotChunkGen)
 		{
 			return new SpigotWorldGenRegion(
-				preset.getFolderName(),
+				preset.getId(),
 				preset.getWorldConfig(),
 				level.getHandle(),
 				((OTGSpigotChunkGen) level.getGenerator()).generator
@@ -271,7 +272,7 @@ public class ObjectUtils
 		else
 		{
 			return new MCWorldGenRegion(
-				preset.getFolderName(),
+				preset.getId(),
 				preset.getWorldConfig(),
 				level.getHandle()
 			);

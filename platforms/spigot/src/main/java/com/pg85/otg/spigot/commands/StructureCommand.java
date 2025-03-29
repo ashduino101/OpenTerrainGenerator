@@ -48,7 +48,7 @@ public class StructureCommand extends BaseCommand
 			Path otgRootFolder = OTG.getEngine().getOTGRootFolder();
 			ILogger logger = OTG.getEngine().getLogger();
 			CustomObjectManager customObjectManager = OTG.getEngine().getCustomObjectManager();
-			IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(((OTGSpigotChunkGen)((CraftWorld)((Player)sender).getWorld()).getGenerator()).getPreset().getFolderName());
+			IMaterialReader materialReader = OTG.getEngine().getPresetLoader().getMaterialReader(((OTGSpigotChunkGen)((CraftWorld)((Player)sender).getWorld()).getGenerator()).getPreset().getId());
 			CustomObjectResourcesManager manager = OTG.getEngine().getCustomObjectResourcesManager();
 			IModLoadedChecker modLoadedChecker = OTG.getEngine().getModLoadedChecker();
 			

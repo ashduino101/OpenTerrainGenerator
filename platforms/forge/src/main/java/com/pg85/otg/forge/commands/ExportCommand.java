@@ -27,7 +27,8 @@ import com.pg85.otg.forge.commands.arguments.PresetArgument;
 import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
 import com.pg85.otg.forge.materials.ForgeMaterialData;
 import com.pg85.otg.forge.util.ForgeNBTHelper;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.nbt.LocalNBTHelper;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
@@ -183,14 +184,19 @@ public class ExportCommand extends BaseCommand
 				isStructure = true;
 			}
 
-			Preset preset = ObjectUtils.getPresetOrDefault(presetName);
+			IPreset preset = ObjectUtils.getPresetOrDefault(presetName);
 			if (preset == null)
 			{
 				source.sendSuccess(new StringTextComponent("Could not find preset " + (presetName == null ? "" : presetName)), false);
 				return 0;
 			}
+			if (!(preset instanceof PresetFolder))
+			{
+				source.sendSuccess(new StringTextComponent("Only unpacked presets can have objects exported."), false);
+				return 0;
+			}
 
-			Path objectPath = ObjectUtils.getObjectFolderPath(isGlobal ? null : preset.getPresetFolder());
+			Path objectPath = ObjectUtils.getObjectFolderPath(isGlobal ? null : ((PresetFolder) preset).getPresetFolder());
 
 			if (!overwrite && new File(objectPath.toFile(), objectName + ".bo3").exists())
 			{
@@ -223,8 +229,8 @@ public class ExportCommand extends BaseCommand
 				);
 
 			// Initialize the settings
-			if (!template.onEnable(preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(),
-				OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()),
+			if (!template.onEnable(preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(),
+				OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
 				OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker()))
 			{
 				source.sendSuccess(new StringTextComponent("Failed to load template \"" + templateName + "\""), false);
@@ -254,11 +260,11 @@ public class ExportCommand extends BaseCommand
 						nbtHelper,
 						null,
 						template.getConfig(),
-						preset.getFolderName(),
+						preset.getId(),
 						OTG.getEngine().getOTGRootFolder(),
 						OTG.getEngine().getLogger(),
 						OTG.getEngine().getCustomObjectManager(),
-						OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()),
+						OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
 						OTG.getEngine().getCustomObjectResourcesManager(),
 						OTG.getEngine().getModLoadedChecker(),
 						excludes
@@ -279,11 +285,11 @@ public class ExportCommand extends BaseCommand
 						nbtHelper,
 						null,
 						template.getConfig(),
-						preset.getFolderName(),
+						preset.getId(),
 						OTG.getEngine().getOTGRootFolder(),
 						OTG.getEngine().getLogger(),
 						OTG.getEngine().getCustomObjectManager(),
-						OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()),
+						OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()),
 						OTG.getEngine().getCustomObjectResourcesManager(),
 						OTG.getEngine().getModLoadedChecker()
 				);
@@ -298,7 +304,7 @@ public class ExportCommand extends BaseCommand
 					OTG.getEngine().getCustomObjectManager().registerGlobalObject(object, object.getConfig().getFile());
 				} else {
 					OTG.getEngine().getCustomObjectManager().getGlobalObjects()
-						.addObjectToPreset(preset.getFolderName(), object.getName().toLowerCase(Locale.ROOT), object.getConfig().getFile(), object);
+						.addObjectToPreset(preset.getId(), object.getName().toLowerCase(Locale.ROOT), object.getConfig().getFile(), object);
 				}
 			} else {
 				source.sendSuccess(new StringTextComponent("Failed to create " + type.getType() + " " + objectName), false);

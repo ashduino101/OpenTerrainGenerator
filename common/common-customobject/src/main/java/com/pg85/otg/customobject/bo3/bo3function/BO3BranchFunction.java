@@ -12,7 +12,11 @@ import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IModLoadedChecker;
 import com.pg85.otg.util.bo3.Rotation;
+import com.pg85.otg.util.helpers.StreamHelper;
+import com.pg85.otg.util.helpers.StringHelper;
 
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -99,5 +103,16 @@ public class BO3BranchFunction extends BranchFunction<BO3Config>
 	public Class<BO3Config> getHolderType()
 	{
 		return BO3Config.class;
+	}
+
+	public static BO3BranchFunction fromStream(DataInputStream stream, ILogger logger, IMaterialReader materialReader) throws IOException, InvalidConfigException
+	{
+		BO3BranchFunction branchFunction = new BO3BranchFunction();
+		String configFunctionString = StreamHelper.readStringFromStream(stream);
+		int bracketIndex = configFunctionString.indexOf('(');
+		String parameters = configFunctionString.substring(bracketIndex + 1, configFunctionString.length() - 1);
+		List<String> args = Arrays.asList(StringHelper.readCommaSeperatedString(parameters));
+		branchFunction.load(args, logger, materialReader);
+		return branchFunction;
 	}
 }

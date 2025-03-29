@@ -10,7 +10,7 @@ import com.pg85.otg.OTG;
 import com.pg85.otg.config.dimensions.DimensionConfig;
 import com.pg85.otg.config.dimensions.DimensionConfig.OTGDimension;
 import com.pg85.otg.config.dimensions.DimensionConfig.OTGOverWorld;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
 
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.chat.NarratorChatListener;
@@ -27,31 +27,31 @@ public class SelectOTGPresetScreen extends Screen
 {
 	private static final ITextComponent SELECT_PRESET = new TranslationTextComponent("otg.createWorld.customize.preset");
 	private final CreateOTGDimensionsScreen parent;
-	private final ArrayList<Preset> presetList = new ArrayList<>();
+	private final ArrayList<IPreset> presetList = new ArrayList<>();
 	private SelectOTGPresetScreen.PresetList guiPresetList;
 	private final int dimId;
 	private final DimensionConfig currentSelection;
-	private Preset selectedPreset;
+	private IPreset selectedPreset;
 
 	public SelectOTGPresetScreen(CreateOTGDimensionsScreen parent, DimensionConfig currentSelection, int dimId)
 	{
 		super(new TranslationTextComponent("otg.createWorld.customize.title"));
 		this.parent = parent;
-		ArrayList<Preset> presetList = OTG.getEngine().getPresetLoader().getAllPresets();
+		ArrayList<IPreset> presetList = OTG.getEngine().getPresetLoader().getAllPresets();
 		this.presetList.add(0, null);
-		for(Preset preset : presetList)
+		for(IPreset preset : presetList)
 		{
 			if(
-				(dimId == 0 || preset.getFolderName() != currentSelection.Overworld.PresetFolderName) &&
-				(dimId == 1 || preset.getFolderName() != currentSelection.Nether.PresetFolderName) &&
-				(dimId == 2 || preset.getFolderName() != currentSelection.End.PresetFolderName)
+				(dimId == 0 || preset.getId() != currentSelection.Overworld.PresetFolderName) &&
+				(dimId == 1 || preset.getId() != currentSelection.Nether.PresetFolderName) &&
+				(dimId == 2 || preset.getId() != currentSelection.End.PresetFolderName)
 			)
 			{
 				boolean bFound = false;
 				int dimId2 = 3;
 				for(OTGDimension otgDim : currentSelection.Dimensions)
 				{
-					if(!(dimId == dimId2 || preset.getFolderName() != otgDim.PresetFolderName))
+					if(!(dimId == dimId2 || preset.getId() != otgDim.PresetFolderName))
 					{
 						bFound = true;
 						break;
@@ -83,7 +83,7 @@ public class SelectOTGPresetScreen extends Screen
 		
 		this.guiPresetList.setSelected(
 			this.guiPresetList.children().stream().filter(
-				entry -> entry.preset != null && this.selectedPreset != null && Objects.equals(entry.preset.getFolderName(), this.selectedPreset.getFolderName())
+				entry -> entry.preset != null && this.selectedPreset != null && Objects.equals(entry.preset.getId(), this.selectedPreset.getId())
 			).findFirst().orElse(null)
 		);
 	}
@@ -127,20 +127,20 @@ public class SelectOTGPresetScreen extends Screen
 			if (p_241215_1_ != null)
 			{
 				SelectOTGPresetScreen.this.selectedPreset = p_241215_1_.preset;
-				NarratorChatListener.INSTANCE.sayNow(p_241215_1_.preset.getFolderName());
+				NarratorChatListener.INSTANCE.sayNow(p_241215_1_.preset.getShortPresetName());
 			}
 		}
 		
 		@OnlyIn(Dist.CLIENT)
 		class PresetEntry extends ExtendedList.AbstractListEntry<SelectOTGPresetScreen.PresetList.PresetEntry>
 		{
-			private final Preset preset;
+			private final IPreset preset;
 			private final ITextComponent field_243282_c;
 		
-			public PresetEntry(Preset p_i232272_2_)
+			public PresetEntry(IPreset p_i232272_2_)
 			{
 				this.preset = p_i232272_2_;
-				this.field_243282_c = new StringTextComponent(p_i232272_2_ == null ? SelectOTGPresetScreen.this.dimId == 0 ? "Non-OTG (Customize)" : SelectOTGPresetScreen.this.dimId < 3 ? "Vanilla" : "None" : p_i232272_2_.getFolderName());		
+				this.field_243282_c = new StringTextComponent(p_i232272_2_ == null ? SelectOTGPresetScreen.this.dimId == 0 ? "Non-OTG (Customize)" : SelectOTGPresetScreen.this.dimId < 3 ? "Vanilla" : "None" : p_i232272_2_.getShortPresetName());
 			}
 
 			@Override
@@ -156,14 +156,14 @@ public class SelectOTGPresetScreen extends Screen
 				{
 					if(this.preset == null && SelectOTGPresetScreen.this.dimId == 0)
 					{
-						SelectOTGPresetScreen.this.currentSelection.Overworld = new OTGOverWorld(null, -1l, null, null);
+						SelectOTGPresetScreen.this.currentSelection.Overworld = new OTGOverWorld(null, null, -1l, null, null);
 						SelectOTGPresetScreen.this.minecraft.setScreen(OTGCustomiseOverworldScreen.create(SelectOTGPresetScreen.this.parent, SelectOTGPresetScreen.this.currentSelection));
 					} else {
-						OTGDimension otgDim = new OTGDimension(this.preset == null ? null : this.preset.getFolderName(), -1l);
+						OTGDimension otgDim = new OTGDimension(this.preset == null ? null : this.preset.getId(), this.preset == null ? null : this.preset.getShortPresetName(), -1l);
 						switch(SelectOTGPresetScreen.this.dimId)
 						{
 							case 0:
-								SelectOTGPresetScreen.this.currentSelection.Overworld = new OTGOverWorld(this.preset == null ? null : this.preset.getFolderName(), -1l, null, null);
+								SelectOTGPresetScreen.this.currentSelection.Overworld = new OTGOverWorld(this.preset == null ? null : this.preset.getId(), this.preset == null ? null : this.preset.getShortPresetName(), -1l, null, null);
 								break;
 							case 1:
 								SelectOTGPresetScreen.this.currentSelection.Nether = otgDim;

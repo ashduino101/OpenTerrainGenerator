@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 
+import com.pg85.otg.interfaces.IPreset;
 import org.apache.logging.log4j.LogManager;
 
 import com.google.gson.JsonElement;
@@ -26,7 +27,7 @@ import com.pg85.otg.constants.Constants;
 import com.pg85.otg.forge.biome.OTGBiomeProvider;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.interfaces.IWorldConfig;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 
@@ -70,7 +71,7 @@ public class OTGDimensionType extends DimensionType
 		// If there is a dimensionconfig for the generatorsettings, use that. Otherwise find a preset by name.
 		DimensionConfig dimConfig = DimensionConfig.fromDisk(generatorSettings);
 		SimpleRegistry<Dimension> dimensions = null;
-		Preset preset = null;
+		IPreset preset = null;
 		String dimConfigName = null;
 		if(dimConfig == null)
 		{
@@ -82,7 +83,7 @@ public class OTGDimensionType extends DimensionType
 				throw new RuntimeException("DimensionConfig or preset name \"" + generatorSettings +"\", provided as generator-settings in server.properties, does not exist.");
 			} else {
 				dimConfig = new DimensionConfig();
-				dimConfig.Overworld = new OTGOverWorld(preset.getFolderName(), seed, null, null);
+				dimConfig.Overworld = new OTGOverWorld(preset.getId(), preset.getShortPresetName(), seed, null, null);
 				dimensions = DimensionType.defaultDimensions(dimensionTypesRegistry, biomesRegistry, dimensionSettingsRegistry, seed);
 			}
 		} else {
@@ -217,7 +218,7 @@ public class OTGDimensionType extends DimensionType
 
 	private static void addDimension(String presetFolderName, SimpleRegistry<Dimension> dimensions, MutableRegistry<DimensionType> dimensionTypeRegistry, RegistryKey<Dimension> dimRegistryKey, ChunkGenerator chunkGenerator, RegistryKey<DimensionType> dimTypeRegistryKey)
 	{
-		Preset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
+		IPreset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
 		IWorldConfig worldConfig = preset.getWorldConfig();
 		
 		// Register OTG DimensionType with settings from WorldConfig

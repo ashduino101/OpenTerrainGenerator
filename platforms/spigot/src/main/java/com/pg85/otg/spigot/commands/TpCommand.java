@@ -3,6 +3,7 @@ package com.pg85.otg.spigot.commands;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.pg85.otg.interfaces.IPreset;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
@@ -10,7 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.util.biome.OTGBiomeResourceLocation;
 
@@ -59,9 +60,9 @@ public class TpCommand extends BaseCommand
 		if (args.length >= 1)
 		{
 			String biome = args[0];
-			Preset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
+			IPreset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
 
-			MinecraftKey key = new MinecraftKey(new OTGBiomeResourceLocation(preset.getPresetFolder(),
+			MinecraftKey key = new MinecraftKey(new OTGBiomeResourceLocation(preset.getId(),
 					preset.getShortPresetName(), preset.getMajorVersion(), biome).toResourceLocationString());
 
 			BiomeBase biomeBase = (world.r().b(IRegistry.ay).a(ResourceKey.a(IRegistry.ay, key)));

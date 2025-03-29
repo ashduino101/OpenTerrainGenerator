@@ -30,14 +30,10 @@ import com.pg85.otg.forge.network.OTGClientSyncManager;
 import com.pg85.otg.gen.biome.BiomeData;
 import com.pg85.otg.gen.biome.layers.BiomeLayerData;
 import com.pg85.otg.gen.biome.layers.NewBiomeGroup;
-import com.pg85.otg.interfaces.IBiome;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.IBiomeResourceLocation;
-import com.pg85.otg.interfaces.ILogger;
-import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.interfaces.IWorldConfig;
+import com.pg85.otg.interfaces.*;
 import com.pg85.otg.presets.LocalPresetLoader;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PackedPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.biome.MCBiomeResourceLocation;
 import com.pg85.otg.util.biome.OTGBiomeResourceLocation;
 import com.pg85.otg.util.biome.WeightedMobSpawnGroup;
@@ -97,8 +93,7 @@ public class ForgePresetLoader extends LocalPresetLoader
 	}
 
 	// Note: BiomeGen and ChunkGen cache some settings during a session, so they'll only update on world exit/rejoin.
-	public void reloadPresetFromDisk(String presetFolderName, IConfigFunctionProvider biomeResourcesManager, ILogger logger, MutableRegistry<Biome> biomeRegistry)
-	{
+	public void reloadPresetFromDisk(String presetFolderName, IConfigFunctionProvider biomeResourcesManager, ILogger logger, MutableRegistry<Biome> biomeRegistry) {
 		clearCaches();
 		
 		if(this.presetsDir.exists() && this.presetsDir.isDirectory())
@@ -111,12 +106,24 @@ public class ForgePresetLoader extends LocalPresetLoader
 					{
 						if(file.getName().equals(Constants.WORLD_CONFIG_FILE))
 						{
-							Preset preset = loadPreset(presetDir.toPath(), biomeResourcesManager, logger);
-							Preset existingPreset = this.presets.get(preset.getFolderName());
+							IPreset preset = loadPreset(presetDir.toPath(), biomeResourcesManager, logger);
+							IPreset existingPreset = this.presets.get(preset.getId());
 							existingPreset.update(preset);
 							break;
 						}
 					}
+				}
+				else if (presetDir.getName().endsWith(".preset") && presetDir.getName().equals(presetFolderName))
+				{
+					try {
+						IPreset preset = PackedPreset.loadPresetFromPack(presetDir);
+						IPreset existingPreset = this.presets.get(preset.getId());
+						existingPreset.update(preset);
+					} catch (Exception e) {
+						// FIXME: we should handle this better
+						logger.log(LogLevel.ERROR, LogCategory.MAIN, String.format("Could not reload preset: ", (Object[])e.getStackTrace()));
+					}
+					break;
 				}
 			}
 		}
@@ -148,13 +155,13 @@ public class ForgePresetLoader extends LocalPresetLoader
 
 	private void registerBiomes(boolean refresh, MutableRegistry<Biome> biomeRegistry)
 	{
-		for(Preset preset : this.presets.values())
+		for(IPreset preset : this.presets.values())
 		{
 			registerBiomesForPreset(refresh, preset, biomeRegistry);
 		}
 	}
 	
-	private void registerBiomesForPreset(boolean refresh, Preset preset, MutableRegistry<Biome> biomeRegistry)
+	private void registerBiomesForPreset(boolean refresh, IPreset preset, MutableRegistry<Biome> biomeRegistry)
 	{
 		// Index BiomeColors for FromImageMode and /otg map
 		HashMap<Integer, Integer> biomeColorMap = new HashMap<Integer, Integer>();
@@ -163,7 +170,7 @@ public class ForgePresetLoader extends LocalPresetLoader
 		int currentId = 1;
 		
 		List<RegistryKey<Biome>> presetBiomes = new ArrayList<>();
-		this.biomesByPresetFolderName.put(preset.getFolderName(), presetBiomes);
+		this.biomesByPresetFolderName.put(preset.getId(), presetBiomes);
 
 		IWorldConfig worldConfig = preset.getWorldConfig();
 		IBiomeConfig oceanBiomeConfig = null;
@@ -182,14 +189,14 @@ public class ForgePresetLoader extends LocalPresetLoader
 		Map<IBiomeResourceLocation, IBiomeConfig> biomeConfigsByResourceLocation = new LinkedHashMap<>();
 		List<String> blackListedBiomes = worldConfig.getBlackListedBiomes();
 
-		processTemplateBiomes(preset.getFolderName(), worldConfig, biomeConfigs, biomeConfigsByResourceLocation, biomeConfigsByName, blackListedBiomes);
+		processTemplateBiomes(preset.getId(), worldConfig, biomeConfigs, biomeConfigsByResourceLocation, biomeConfigsByName, blackListedBiomes);
 		
 		for(IBiomeConfig biomeConfig : biomeConfigs)
 		{
 			if(!biomeConfig.getIsTemplateForBiome())
 			{
 				// Normal OTG biome, not a template biome.
-				IBiomeResourceLocation otgLocation = new OTGBiomeResourceLocation(preset.getPresetFolder(), preset.getShortPresetName(), preset.getMajorVersion(), biomeConfig.getName());
+				IBiomeResourceLocation otgLocation = new OTGBiomeResourceLocation(preset.getId(), preset.getShortPresetName(), preset.getMajorVersion(), biomeConfig.getName());
 				biomeConfigsByResourceLocation.put(otgLocation, biomeConfig);
 				biomeConfigsByName.put(biomeConfig.getName(), biomeConfig);
 			}
@@ -322,8 +329,8 @@ public class ForgePresetLoader extends LocalPresetLoader
 			IBiome otgBiome = new ForgeBiome(biome, biomeConfig.getValue());
 			if(otgBiomeId >= presetIdMapping.length)
 			{
-				OTG.getEngine().getLogger().log(LogLevel.FATAL, LogCategory.CONFIGS, "Fatal error while registering OTG biome id's for preset " + preset.getFolderName() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
-				throw new RuntimeException("Fatal error while registering OTG biome id's for preset " + preset.getFolderName() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
+				OTG.getEngine().getLogger().log(LogLevel.FATAL, LogCategory.CONFIGS, "Fatal error while registering OTG biome id's for preset " + preset.getId() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
+				throw new RuntimeException("Fatal error while registering OTG biome id's for preset " + preset.getId() + ", most likely you've assigned a DefaultOceanBiome that doesn't exist.");
 			}
 			presetIdMapping[otgBiomeId] = otgBiome;
 
@@ -391,22 +398,22 @@ public class ForgePresetLoader extends LocalPresetLoader
 			System.arraycopy(presetIdMapping, 1, presetIdMapping, 0, presetIdMapping.length - 1);
 		}
 		
-		this.globalIdMapping.put(preset.getFolderName(), presetIdMapping);
+		this.globalIdMapping.put(preset.getId(), presetIdMapping);
 
 		// Set the base data
-		BiomeLayerData data = new BiomeLayerData(preset.getPresetFolder(), worldConfig, oceanBiomeConfig, oceanTemperatures);
+		BiomeLayerData data = new BiomeLayerData(preset.getMapImageSource(), worldConfig, oceanBiomeConfig, oceanTemperatures);
 		
 		Set<Integer> biomeDepths = new HashSet<>();
 		Map<Integer, List<NewBiomeGroup>> groupDepths = new HashMap<>();
 
 		// Iterate through the groups and add it to the layer data
-		processBiomeGroups(preset.getFolderName(), worldConfig, biomeConfigsByResourceLocation, biomeConfigsByName, blackListedBiomes, biomeDepths, groupDepths, data);
+		processBiomeGroups(preset.getId(), worldConfig, biomeConfigsByResourceLocation, biomeConfigsByName, blackListedBiomes, biomeDepths, groupDepths, data);
 		
 		// Add the data and process isle/border biomes
 		data.init(biomeDepths, groupDepths, isleBiomesAtDepth, borderBiomesAtDepth, worldBiomes, biomeColorMap, presetIdMapping);
 
 		// Set data for this preset
-		this.presetGenerationData.put(preset.getFolderName(), data);
+		this.presetGenerationData.put(preset.getId(), data);
 	}
 
 	private void processTemplateBiomes(String presetFolderName, IWorldConfig worldConfig, List<IBiomeConfig> biomeConfigs, Map<IBiomeResourceLocation, IBiomeConfig> biomeConfigsByResourceLocation, Map<String, IBiomeConfig> biomeConfigsByName, List<String> blackListedBiomes)

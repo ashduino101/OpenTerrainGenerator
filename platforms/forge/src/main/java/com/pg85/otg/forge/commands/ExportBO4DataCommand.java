@@ -18,9 +18,10 @@ import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.forge.gen.ForgeWorldGenRegion;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.interfaces.IBiomeConfig;
+import com.pg85.otg.interfaces.IPreset;
 import com.pg85.otg.interfaces.IStructuredCustomObject;
 import com.pg85.otg.interfaces.IWorldGenRegion;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
@@ -61,7 +62,7 @@ public class ExportBO4DataCommand extends BaseCommand
 			return 0;
 		}
 
-		Preset preset = ((OTGNoiseChunkGenerator)source.getLevel().getChunkSource().generator).getPreset();
+		IPreset preset = ((OTGNoiseChunkGenerator)source.getLevel().getChunkSource().generator).getPreset();
         if(preset.getWorldConfig().getCustomStructureType() == CustomStructureType.BO4)
         {	        
         	if(!isRunning)
@@ -81,7 +82,7 @@ public class ExportBO4DataCommand extends BaseCommand
 			        	{
 			        		if(res instanceof CustomStructureResource)
 			        		{
-			        			for(IStructuredCustomObject structure : ((CustomStructureResource)res).getObjects(preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker()))
+			        			for(IStructuredCustomObject structure : ((CustomStructureResource)res).getObjects(preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker()))
 			        			{
 			        				if(structure != null) // Structure was in resource list but file could not be found.
 			        				{
@@ -89,15 +90,15 @@ public class ExportBO4DataCommand extends BaseCommand
 			        					{
 			        						if(!BO4Data.bo4DataExists(((BO4)structure).getConfig()))
 			        						{
-				        	        			BO4CustomStructureCoordinate structureCoord = new BO4CustomStructureCoordinate(preset.getFolderName(), structure, null, Rotation.NORTH, 0, (short)0, 0, 0, false, false, null);
-				        	        			BO4CustomStructure structureStart = new BO4CustomStructure(source.getLevel().getSeed(), structureCoord, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+				        	        			BO4CustomStructureCoordinate structureCoord = new BO4CustomStructureCoordinate(preset.getId(), structure, null, Rotation.NORTH, 0, (short)0, 0, 0, false, false, null);
+				        	        			BO4CustomStructure structureStart = new BO4CustomStructure(source.getLevel().getSeed(), structureCoord, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 				        	        			
 				        	                	// Get minimum size (size if spawned with branchDepth 0)
 				        	                	try {
 				        	                		// World save folder name may not be identical to level name, fetch it.
 				        	                		Path worldSaveFolder = source.getLevel().getServer().getWorldPath(FolderName.PLAYER_DATA_DIR).getParent();
-				        	                		IWorldGenRegion worldGenRegion = new ForgeWorldGenRegion(preset.getFolderName(), preset.getWorldConfig(), source.getLevel(), (OTGNoiseChunkGenerator)source.getLevel().getChunkSource().getGenerator());
-				        	                		structureStart.getMinimumSize(((OTGNoiseChunkGenerator)source.getLevel().getChunkSource().generator).getStructureCache(worldSaveFolder), worldGenRegion, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+				        	                		IWorldGenRegion worldGenRegion = new ForgeWorldGenRegion(preset.getId(), preset.getWorldConfig(), source.getLevel(), (OTGNoiseChunkGenerator)source.getLevel().getChunkSource().getGenerator());
+				        	                		structureStart.getMinimumSize(((OTGNoiseChunkGenerator)source.getLevel().getChunkSource().generator).getStructureCache(worldSaveFolder), worldGenRegion, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 				        						}
 				        	                	catch (InvalidConfigException e)
 				        	                	{
@@ -106,7 +107,7 @@ public class ExportBO4DataCommand extends BaseCommand
 				        	                	
 				        	                	OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Exporting .BO4Data for structure start " + ((BO4)structure).getName());
 				        	                	boName = ((BO4)structure).getName();
-				        	                	BO4Data.generateBO4Data(((BO4)structure).getConfig(), preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+				        	                	BO4Data.generateBO4Data(((BO4)structure).getConfig(), preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 				        	    	            OTG.getEngine().getCustomObjectManager().getGlobalObjects().unloadCustomObjectFiles();
 			        						}
 			        					}
@@ -116,18 +117,18 @@ public class ExportBO4DataCommand extends BaseCommand
 			        	}
 			        }
 		
-			        ArrayList<String> boNames = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getAllBONamesForPreset(preset.getFolderName(), OTG.getEngine().getLogger(), OTG.getEngine().getOTGRootFolder());
+			        ArrayList<String> boNames = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getAllBONamesForPreset(preset.getId(), OTG.getEngine().getLogger(), OTG.getEngine().getOTGRootFolder());
 		
 			        current = 0;
 			        total = boNames.size();
 			        for (String boName : boNames)
 			        {
 			        	current++;
-			        	CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(boName, preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+			        	CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(boName, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 			        	if(bo != null && bo instanceof BO4 && !BO4Data.bo4DataExists(((BO4)bo).getConfig()))
 			        	{
 			        		OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Exporting .BO4Data " + current + "/" + total + " " + boName);
-			        		BO4Data.generateBO4Data(((BO4)bo).getConfig(), preset.getFolderName(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getFolderName()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+			        		BO4Data.generateBO4Data(((BO4)bo).getConfig(), preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
 				            OTG.getEngine().getCustomObjectManager().getGlobalObjects().unloadCustomObjectFiles();
 			        	}
 			        }

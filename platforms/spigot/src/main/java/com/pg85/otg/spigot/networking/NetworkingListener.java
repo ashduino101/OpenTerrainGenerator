@@ -1,5 +1,6 @@
 package com.pg85.otg.spigot.networking;
 
+import com.pg85.otg.interfaces.IPreset;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.entity.Player;
@@ -11,7 +12,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import com.pg85.otg.OTG;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.spigot.OTGPlugin;
 import com.pg85.otg.spigot.gen.OTGNoiseChunkGenerator;
 import com.pg85.otg.util.logging.LogCategory;
@@ -51,10 +52,10 @@ public class NetworkingListener implements Listener
 			return;
 		}
 
-		Preset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
+		IPreset preset = ((OTGNoiseChunkGenerator) world.getChunkProvider().getChunkGenerator()).getPreset();
 
 		PacketDataSerializer buffer = new PacketDataSerializer(Unpooled.buffer(32766));
-		String presetName = preset.getFolderName().toLowerCase();
+		String presetName = preset.getId().toLowerCase();
 		
 		buffer.writeByte((byte) 1);
 		buffer.writeInt(preset.getAllBiomeConfigs().size());

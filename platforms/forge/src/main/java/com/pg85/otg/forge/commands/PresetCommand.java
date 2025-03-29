@@ -5,7 +5,9 @@ import java.util.stream.Collectors;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.pg85.otg.forge.gen.OTGNoiseChunkGenerator;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.IPreset;
+import com.pg85.otg.presets.PackedPreset;
+import com.pg85.otg.presets.PresetFolder;
 import com.pg85.otg.util.materials.LocalMaterialData;
 
 import net.minecraft.command.CommandSource;
@@ -36,11 +38,12 @@ public class PresetCommand extends BaseCommand
 			source.sendSuccess(new StringTextComponent("OTG is not enabled in this world"), false);
 			return 0;
 		}
-		Preset preset = ((OTGNoiseChunkGenerator) source.getLevel().getChunkSource().generator).getPreset();
+		IPreset preset = ((OTGNoiseChunkGenerator) source.getLevel().getChunkSource().generator).getPreset();
 		source.sendSuccess(new StringTextComponent
-			("Preset: " + preset.getFolderName()
-			 + "\nDescription: " + preset.getDescription()
-			 + "\nMajor version: " + preset.getMajorVersion()
+			("Preset: " + preset.getId()
+			 + "\nDescription: " + preset.getWorldConfig().getDescription()
+			 + "\nMajor version: " + preset.getWorldConfig().getMajorVersion()
+			 + "\nPacked: " + ((preset instanceof PackedPreset) ? "yes" : "no")
 			),
 				false);
 			List<String> portalBlocks = ((OTGNoiseChunkGenerator) source.getLevel().getChunkSource().generator)

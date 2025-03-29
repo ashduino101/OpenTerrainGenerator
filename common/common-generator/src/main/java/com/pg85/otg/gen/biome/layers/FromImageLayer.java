@@ -27,8 +27,7 @@ public class FromImageLayer implements ParentedLayer
 		// Read from file
 		try
 		{
-			final File image = new File(data.presetDir.toFile(), data.imageFile);
-			final BufferedImage map = ImageIO.read(image);
+			final BufferedImage map = data.mapImageProvider.getBiomeMap();
 
 			this.mapWidth = map.getWidth(null);
 			this.mapHeight = map.getHeight(null);

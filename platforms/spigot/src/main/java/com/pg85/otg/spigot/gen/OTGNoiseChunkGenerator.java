@@ -11,12 +11,7 @@ import com.pg85.otg.constants.SettingsEnums;
 import com.pg85.otg.customobject.structures.CustomStructureCache;
 import com.pg85.otg.gen.OTGChunkGenerator;
 import com.pg85.otg.gen.OTGChunkDecorator;
-import com.pg85.otg.interfaces.IBiome;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.ICachedBiomeProvider;
-import com.pg85.otg.interfaces.ILayerSource;
-import com.pg85.otg.interfaces.IWorldConfig;
-import com.pg85.otg.presets.Preset;
+import com.pg85.otg.interfaces.*;
 import com.pg85.otg.spigot.biome.SpigotBiome;
 import com.pg85.otg.spigot.presets.SpigotPresetLoader;
 import com.pg85.otg.util.ChunkCoordinate;
@@ -77,7 +72,7 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 	private final OTGChunkDecorator chunkDecorator;
 
 	private final String presetFolderName;
-	private final Preset preset;
+	private final IPreset preset;
 	protected final SeededRandom random;
 
 	// TODO: Move this to WorldLoader when ready?
@@ -131,7 +126,7 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 	
 	private static StructureSettings overrideStructureSettings(StructureSettings oldSettings, String presetFolderName)
 	{
-		Preset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
+		IPreset preset = OTG.getEngine().getPresetLoader().getPresetByFolderName(presetFolderName);
 		IWorldConfig worldConfig = preset.getWorldConfig();		
 		Builder<StructureGenerator<?>, StructureSettingsFeature> structureSeparationSettings = ImmutableMap.<StructureGenerator<?>, StructureSettingsFeature>builder();
 		if(worldConfig.getVillagesEnabled())
@@ -442,7 +437,7 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 		//
 		
 		ChunkCoordinate chunkBeingDecorated = ChunkCoordinate.fromBlockCoords(worldX, worldZ);
-		SpigotWorldGenRegion spigotWorldGenRegion = new SpigotWorldGenRegion(this.preset.getFolderName(), this.preset.getWorldConfig(), worldGenRegion, this);
+		SpigotWorldGenRegion spigotWorldGenRegion = new SpigotWorldGenRegion(this.preset.getId(), this.preset.getWorldConfig(), worldGenRegion, this);
 		IBiome biome = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((worldGenRegion.a() << 2) + 2, (worldGenRegion.b() << 2) + 2);
 		IBiome biome1 = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((worldGenRegion.a() << 2), (worldGenRegion.b() << 2));
 		IBiome biome2 = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome((worldGenRegion.a() << 2), (worldGenRegion.b() << 2) + 4);
@@ -489,7 +484,7 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 			* - Frank
 			 */
 			List<Integer> alreadyDecorated = new ArrayList<>();
-			this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, spigotWorldGenRegion, biomeConfig, getStructureCache(worldSaveFolder));
+			this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, spigotWorldGenRegion, biomeConfig, getStructureCache(worldSaveFolder));
 			((SpigotBiome)biome).getBiomeBase().a(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
 			alreadyDecorated.add(biome.getBiomeConfig().getOTGBiomeId());
 			// Attempt to decorate other biomes if ImprovedBiomeDecoration - Frank
@@ -497,25 +492,25 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 			{
 				if (!alreadyDecorated.contains(biome1.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, spigotWorldGenRegion, biome1.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, spigotWorldGenRegion, biome1.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					((SpigotBiome) biome1).getBiomeBase().a(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
 					alreadyDecorated.add(biome1.getBiomeConfig().getOTGBiomeId());
 				}
 				if (!alreadyDecorated.contains(biome2.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, spigotWorldGenRegion, biome2.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, spigotWorldGenRegion, biome2.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					((SpigotBiome) biome2).getBiomeBase().a(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
 					alreadyDecorated.add(biome2.getBiomeConfig().getOTGBiomeId());
 				}
 				if (!alreadyDecorated.contains(biome3.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, spigotWorldGenRegion, biome3.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, spigotWorldGenRegion, biome3.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					((SpigotBiome) biome3).getBiomeBase().a(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
 					alreadyDecorated.add(biome3.getBiomeConfig().getOTGBiomeId());
 				}
 				if (!alreadyDecorated.contains(biome4.getBiomeConfig().getOTGBiomeId()))
 				{
-					this.chunkDecorator.decorate(this.preset.getFolderName(), chunkBeingDecorated, spigotWorldGenRegion, biome4.getBiomeConfig(), getStructureCache(worldSaveFolder));
+					this.chunkDecorator.decorate(this.preset.getId(), chunkBeingDecorated, spigotWorldGenRegion, biome4.getBiomeConfig(), getStructureCache(worldSaveFolder));
 					((SpigotBiome) biome4).getBiomeBase().a(structureManager, this, worldGenRegion, decorationSeed, sharedseedrandom, blockpos);
 				}
 			}
@@ -744,7 +739,7 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 		return this.dimensionSettingsSupplier.get().g();
 	}
 
-	public Preset getPreset()
+	public IPreset getPreset()
 	{
 		return preset;
 	}
@@ -753,7 +748,7 @@ public class OTGNoiseChunkGenerator extends ChunkGenerator
 	{
 		if(this.structureCache == null)
 		{
-			this.structureCache = OTG.getEngine().createCustomStructureCache(this.preset.getFolderName(), worldSaveFolder, this.worldSeed, this.preset.getWorldConfig().getCustomStructureType() == SettingsEnums.CustomStructureType.BO4);
+			this.structureCache = OTG.getEngine().createCustomStructureCache(this.preset.getId(), worldSaveFolder, this.worldSeed, this.preset.getWorldConfig().getCustomStructureType() == SettingsEnums.CustomStructureType.BO4);
 		}
 		return this.structureCache;
 	}
