@@ -1,12 +1,11 @@
 package com.pg85.otg.customobject.bo2;
 
+import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Random;
 
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.customobject.CustomObject;
@@ -21,6 +20,8 @@ import com.pg85.otg.customobject.config.io.SettingsReaderBO4;
 import com.pg85.otg.customobject.config.io.SettingsWriterBO4;
 import com.pg85.otg.customobject.creator.ObjectType;
 import com.pg85.otg.customobject.structures.CustomStructureCache;
+import com.pg85.otg.customobject.util.BlockPacker;
+import com.pg85.otg.customobject.util.BlockUnpacker;
 import com.pg85.otg.customobject.util.BoundingBox;
 import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.IBiomeConfig;
@@ -61,6 +62,8 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 	public double collisionPercentage;
 	public int spawnElevationMin;
 	public int spawnElevationMax;
+
+	private String overrideName = null;
 
 	BO2(SettingsReaderBO4 reader)
 	{
@@ -168,21 +171,7 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 	@Override
 	public BlockFunction<?>[] getBlockFunctions(String presetFolderName, Path otgRootFolder, ILogger logger, ICustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker)
 	{
-		ObjectCoordinate[] data = this.data[0];
-		BlockFunction<?>[] blockFunctions = new BO3BlockFunction[data.length];
-		int i = 0;
-		for (ObjectCoordinate point : data)
-		{
-			BO3BlockFunction block = new BO3BlockFunction();
-			block.material = point.material;
-			block.nbt = null;
-			block.nbtName = "";
-			block.x = point.x;
-			block.y = (short) point.y;
-			block.z = point.z;
-			blockFunctions[i++] = block;
-		}
-		return blockFunctions;
+		return this.data[0];
 	}
 
 	@Override
@@ -566,5 +555,107 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 	public boolean loadChecks(IModLoadedChecker modLoadedChecker)
 	{
 		return true;
+	}
+
+	public void overrideName(String name) {
+		this.overrideName = name;
+	}
+
+	@Override
+	public String getName() {
+		if (this.overrideName != null) {
+			return this.overrideName;
+		}
+		if (this.reader != null) {
+			return super.getName();
+		}
+		return null;
+	}
+
+	private static final int bo2DataVersion = 1;
+	public void writeToStream(DataOutput stream) throws IOException
+	{
+		stream.writeShort(bo2DataVersion);
+
+		this.spawnOnBlockType.writeToStream(stream);
+		this.collisionBlockType.writeToStream(stream);
+
+		stream.writeBoolean(this.spawnWater);
+		stream.writeBoolean(this.spawnLava);
+		stream.writeBoolean(this.spawnAboveGround);
+		stream.writeBoolean(this.spawnUnderGround);
+		stream.writeBoolean(this.spawnSunlight);
+		stream.writeBoolean(this.spawnDarkness);
+		stream.writeBoolean(this.randomRotation);
+		stream.writeBoolean(this.dig);
+		stream.writeBoolean(this.tree);
+		stream.writeBoolean(this.branch);
+		stream.writeBoolean(this.needsFoundation);
+		stream.writeBoolean(this.doReplaceBlocks);
+
+		stream.writeInt(this.rarity);
+		stream.writeDouble(this.collisionPercentage);
+		stream.writeInt(this.spawnElevationMin);
+		stream.writeInt(this.spawnElevationMax);
+
+		BlockPacker packer = new BlockPacker(stream);
+		packer.packToStream(Arrays.asList(this.data[0]));
+	}
+
+	public static BO2 readFromStream(DataInputStream stream, ILogger logger, IMaterialReader materialReader) throws Exception
+	{
+		short version = stream.readShort();
+		if (version > bo2DataVersion) {
+			throw new InvalidConfigException("BO2 data version too new (" + version + ")! I only know up to " + bo2DataVersion);
+		}
+
+		BO2 newConfig = new BO2(null);
+
+		newConfig.spawnOnBlockType = new MaterialSet();
+		newConfig.spawnOnBlockType.parseAndAddFromStream(stream, materialReader);
+		newConfig.collisionBlockType = new MaterialSet();
+		newConfig.collisionBlockType.parseAndAddFromStream(stream, materialReader);
+
+		newConfig.spawnWater = stream.readBoolean();
+		newConfig.spawnLava = stream.readBoolean();
+		newConfig.spawnAboveGround = stream.readBoolean();
+		newConfig.spawnUnderGround = stream.readBoolean();
+		newConfig.spawnSunlight = stream.readBoolean();
+		newConfig.spawnDarkness = stream.readBoolean();
+		newConfig.randomRotation = stream.readBoolean();
+		newConfig.dig = stream.readBoolean();
+		newConfig.tree = stream.readBoolean();
+		newConfig.branch = stream.readBoolean();
+		newConfig.needsFoundation = stream.readBoolean();
+		newConfig.doReplaceBlocks = stream.readBoolean();
+
+		newConfig.rarity = stream.readInt();
+		newConfig.collisionPercentage = stream.readDouble();
+		newConfig.spawnElevationMin = stream.readInt();
+		newConfig.spawnElevationMax = stream.readInt();
+
+		BlockUnpacker unpacker = new BlockUnpacker();
+		newConfig.data = new ObjectCoordinate[4][];
+		List<BlockFunction<?>> coordinates = unpacker.unpackFromStream(stream, ObjectCoordinate::new, materialReader, logger);
+
+		newConfig.data[0] = new ObjectCoordinate[coordinates.size()];
+		newConfig.data[1] = new ObjectCoordinate[coordinates.size()];
+		newConfig.data[2] = new ObjectCoordinate[coordinates.size()];
+		newConfig.data[3] = new ObjectCoordinate[coordinates.size()];
+
+		ObjectCoordinate coordinate;
+		for (int i = 0; i < coordinates.size(); i++)
+		{
+			coordinate = (ObjectCoordinate) coordinates.get(i);
+			newConfig.data[0][i] = coordinate;
+			coordinate = coordinate.rotate();
+			newConfig.data[1][i] = coordinate;
+			coordinate = coordinate.rotate();
+			newConfig.data[2][i] = coordinate;
+			coordinate = coordinate.rotate();
+			newConfig.data[3][i] = coordinate;
+		}
+
+		return newConfig;
 	}
 }

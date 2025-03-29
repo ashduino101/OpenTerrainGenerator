@@ -1,27 +1,36 @@
 package com.pg85.otg.customobject.bo2;
 
+import com.pg85.otg.customobject.bofunctions.BlockFunction;
 import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.IMaterialReader;
-import com.pg85.otg.util.materials.LocalMaterialData;
+import com.pg85.otg.interfaces.IWorldGenRegion;
+import com.pg85.otg.util.biome.ReplaceBlockMatrix;
 
-class ObjectCoordinate
+import java.util.Random;
+
+class ObjectCoordinate extends BlockFunction<BO2>
 {
-	int x;
-	int y;
-	int z;
-	private int hash;
-	LocalMaterialData material;
 	private int branchDirection;
 	private int branchOdds;
 
-	private ObjectCoordinate(int _x, int _y, int _z)
+	protected ObjectCoordinate() {
+		this.branchDirection = -1;
+		this.branchOdds = -1;
+
+		this.nbt = null;
+		this.nbtName = "";
+	}
+
+	private ObjectCoordinate(int _x, short _y, int _z)
 	{
 		this.x = _x;
 		this.y = _y;
 		this.z = _z;
 		this.branchDirection = -1;
 		this.branchOdds = -1;
-		this.hash = this.x + this.z << 8 + this.y << 16;
+
+		this.nbt = null;
+		this.nbtName = "";
 	}
 
 	@Override
@@ -38,7 +47,7 @@ class ObjectCoordinate
 	@Override
 	public int hashCode()
 	{
-		return hash;
+		return this.x + this.z << 8 + this.y << 16;
 	}
 
 	ObjectCoordinate rotate()
@@ -74,15 +83,15 @@ class ObjectCoordinate
 			int z = Integer.parseInt(coordinates[1]);
 			int y = Integer.parseInt(coordinates[2]);
 
-			ObjectCoordinate newCoordinate = new ObjectCoordinate(x, y, z);
+			ObjectCoordinate newCoordinate = new ObjectCoordinate(x, (short) y, z);
 
 			// TODO: What is this for, where do we ever use # or @?
 			String workingDataString = value;
 			if (workingDataString.contains("#"))
 			{
-				String stringSet[] = workingDataString.split("#");
+				String[] stringSet = workingDataString.split("#");
 				workingDataString = stringSet[0];
-				String branchData[] = stringSet[1].split("@");
+				String[] branchData = stringSet[1].split("@");
 				newCoordinate.branchDirection = Integer.parseInt(branchData[0]);
 				newCoordinate.branchOdds = Integer.parseInt(branchData[1]);
 			}
@@ -90,13 +99,25 @@ class ObjectCoordinate
 
 			return newCoordinate;
 		}
-		catch (NumberFormatException e)
+		catch (NumberFormatException | InvalidConfigException e)
 		{
 			return null;
 		}
-		catch (InvalidConfigException e)
-		{
-			return null;
-		}
+    }
+
+	// These functions are only implemented so that we can extend BlockFunction
+	@Override
+	public void spawn(IWorldGenRegion worldGenRegion, Random random, int x, int y, int z) {
+		worldGenRegion.setBlock(x, y, z, this.material, this.nbt);
+	}
+
+	@Override
+	public void spawn(IWorldGenRegion worldGenRegion, Random random, int x, int y, int z, ReplaceBlockMatrix replaceBlocks) {
+		worldGenRegion.setBlock(x, y, z, this.material, this.nbt, replaceBlocks);
+	}
+
+	@Override
+	public Class<BO2> getHolderType() {
+		return BO2.class;
 	}
 }

@@ -8,6 +8,7 @@ import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.config.map.ByteArrayMapImageProvider;
 import com.pg85.otg.config.world.WorldConfig;
 import com.pg85.otg.customobject.CustomObject;
+import com.pg85.otg.customobject.bo2.BO2;
 import com.pg85.otg.customobject.bo3.BO3;
 import com.pg85.otg.customobject.bo3.BO3Config;
 import com.pg85.otg.customobject.bo4.BO4;
@@ -116,6 +117,12 @@ public class PackedPreset implements IPreset
                 continue;
             }
             switch (type) {
+                case 2:  // BO2
+                    OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("%s at %d", objectOffset.getKey(), objectOffset.getValue()));
+                    BO2 config2 = BO2.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName));
+                    config2.overrideName(objectOffset.getKey());
+                    OTG.getEngine().getCustomObjectManager().registerGlobalObject(config2);
+                    break;
                 case 3:  // BO3
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("%s at %d", objectOffset.getKey(), objectOffset.getValue()));
                     BO3Config config3 = BO3Config.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());

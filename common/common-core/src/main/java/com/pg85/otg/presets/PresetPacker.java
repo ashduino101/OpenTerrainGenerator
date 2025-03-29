@@ -9,6 +9,7 @@ import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.constants.SettingsEnums;
 import com.pg85.otg.customobject.CustomObject;
+import com.pg85.otg.customobject.bo2.BO2;
 import com.pg85.otg.customobject.bo3.BO3;
 import com.pg85.otg.customobject.bo3.bo3function.BO3BranchFunction;
 import com.pg85.otg.customobject.bo4.BO4;
@@ -105,6 +106,8 @@ public class PresetPacker
                         packBO4((BO4) object, channel, stream, preset, biomeObjectOffsets, nbtFiles);
                     } else if (object instanceof BO3) {
                         packBO3((BO3) object, channel, stream, preset, biomeObjectOffsets, nbtFiles);
+                    } else if (object instanceof BO2) {
+                        packBO2((BO2) object, channel, stream, biomeObjectOffsets);
                     }
                 }
             }
@@ -229,6 +232,8 @@ public class PresetPacker
                             packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles);
                         } else if (bo instanceof BO3) {
                             packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles);
+                        } else if (bo instanceof BO2) {
+                            packBO2((BO2)bo, channel, stream, offsets);
                         }
                     }
                 }
@@ -275,10 +280,31 @@ public class PresetPacker
                             packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles);
                         } else if (bo instanceof BO3) {
                             packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles);
+                        } else if (bo instanceof BO2) {
+                            packBO2((BO2)bo, channel, stream, offsets);
                         }
                     }
                 }
             }
         }
+    }
+
+    public static void packBO2(BO2 object, FileChannel channel, DataOutputStream stream, HashMap<String, Long> offsets) throws IOException {
+        OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, object.getName());
+
+        ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
+        DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
+
+        long offset = channel.position();
+
+        stream.writeByte(2);
+
+        object.writeToStream(dataOut);
+
+        offsets.put(object.getName(), offset);
+
+        stream.writeInt(byteArrayOut.size());
+        stream.write(byteArrayOut.toByteArray(), 0, byteArrayOut.size());
+        stream.flush();
     }
 }
