@@ -10,6 +10,7 @@ import com.pg85.otg.config.world.WorldConfig;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.bo3.BO3;
 import com.pg85.otg.customobject.bo3.BO3Config;
+import com.pg85.otg.customobject.bo4.BO4;
 import com.pg85.otg.customobject.bo4.BO4Config;
 import com.pg85.otg.interfaces.IBiomeConfig;
 import com.pg85.otg.interfaces.IMapImageProvider;
@@ -123,6 +124,7 @@ public class PackedPreset implements IPreset
                 case 4:  // BO4
                     BO4Config config4 = new BO4Config(null, false, presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
                     config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName));
+                    OTG.getEngine().getCustomObjectManager().registerGlobalObject(new BO4(objectOffset.getKey(), null, config4));
                     break;
             }
         }
