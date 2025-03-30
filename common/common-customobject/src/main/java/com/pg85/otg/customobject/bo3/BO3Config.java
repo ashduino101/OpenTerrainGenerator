@@ -2,11 +2,9 @@ package com.pg85.otg.customobject.bo3;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import com.pg85.otg.util.StringTable;
 import com.pg85.otg.config.standard.WorldStandardValues;
 import com.pg85.otg.constants.SettingsEnums.ConfigMode;
 import com.pg85.otg.customobject.CustomObjectManager;
@@ -17,8 +15,6 @@ import com.pg85.otg.customobject.bo3.bo3function.BO3EntityFunction;
 import com.pg85.otg.customobject.bo3.bo3function.BO3RandomBlockFunction;
 import com.pg85.otg.customobject.bo3.bo3function.BO3WeightedBranchFunction;
 import com.pg85.otg.customobject.bo3.checks.*;
-import com.pg85.otg.customobject.bo4.bo4function.BO4BlockFunction;
-import com.pg85.otg.customobject.bo4.bo4function.BO4RandomBlockFunction;
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
 import com.pg85.otg.customobject.bofunctions.BranchFunction;
 import com.pg85.otg.customobject.config.CustomObjectConfigFile;
@@ -37,11 +33,9 @@ import com.pg85.otg.interfaces.ICustomObjectManager;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IModLoadedChecker;
-import com.pg85.otg.util.Pair;
 import com.pg85.otg.util.helpers.StreamHelper;
-import com.pg85.otg.util.logging.LogCategory;
-import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.MaterialPalette;
+import com.pg85.otg.util.nbt.NBTPalette;
 import com.pg85.otg.util.nbt.NamedBinaryTag;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.MaterialSet;
@@ -770,11 +764,11 @@ public class BO3Config extends CustomObjectConfigFile
 	}
 
 	private static final int bo3DataVersion = 5;
-	public void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette) throws IOException
+	public void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException
 	{
 		stream.writeInt(bo3DataVersion);
 		stream.writeBoolean(strip);
-		stream.writeBoolean(materialPalette != null);
+		stream.writeBoolean(materialPalette != null && metadataPalette != null);
 
 		if (!strip) {
 			StreamHelper.writeStringToStream(stream, this.author);
@@ -815,7 +809,7 @@ public class BO3Config extends CustomObjectConfigFile
 
 		List<BlockFunction<?>> blocks = Arrays.asList(getBlocks(0));
 		BlockPacker packer = new BlockPacker(stream);
-		packer.packToStream(blocks, materialPalette);
+		packer.packToStream(blocks, materialPalette, metadataPalette);
 
 		stream.writeInt(this.bo3Checks[0].length);
 		for (BO3Check func : this.bo3Checks[0]) {
@@ -860,7 +854,7 @@ public class BO3Config extends CustomObjectConfigFile
 		}
 	}
 
-	public static BO3Config readFromStream(DataInputStream stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette) throws Exception
+	public static BO3Config readFromStream(DataInputStream stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette, NBTPalette nbtPalette) throws Exception
 	{
 		int version = stream.readInt();
 		if (version > bo3DataVersion) {
@@ -872,13 +866,14 @@ public class BO3Config extends CustomObjectConfigFile
 			isStripped = stream.readBoolean();
 		}
 		if (version >= 5) {
-			boolean useMaterialPalette = stream.readBoolean();
-			if (useMaterialPalette && materialPalette == null) {
-				throw new InvalidConfigException("BO3 requires material palette but none was provided!");
+			boolean usePalettes = stream.readBoolean();
+			if (usePalettes && (materialPalette == null || nbtPalette == null)) {
+				throw new InvalidConfigException("BO3 requires material and NBT palettes but none were provided!");
 			}
-			if (!useMaterialPalette) {
+			if (!usePalettes) {
 				// make sure not to use the material palette
 				materialPalette = null;
+				nbtPalette = null;
 			}
 		}
 
@@ -925,7 +920,7 @@ public class BO3Config extends CustomObjectConfigFile
 
 		List<BlockFunction<?>> blocks;
 		BlockUnpacker unpacker = new BlockUnpacker();
-		blocks = unpacker.unpackFromStream(stream, BO3BlockFunction::new, materialReader, logger, materialPalette);
+		blocks = unpacker.unpackFromStream(stream, BO3BlockFunction::new, materialReader, logger, materialPalette, nbtPalette);
 		for (BlockFunction<?> block : blocks) {
 			box.expandToFit(block.x, block.y, block.z);
 		}

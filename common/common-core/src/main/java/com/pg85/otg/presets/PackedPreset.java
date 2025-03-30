@@ -2,7 +2,7 @@ package com.pg85.otg.presets;
 
 import com.pg85.otg.OTG;
 import com.pg85.otg.config.biome.BiomeConfig;
-import com.pg85.otg.config.io.StringTable;
+import com.pg85.otg.util.StringTable;
 import com.pg85.otg.config.io.PackedFileSettings;
 import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.config.map.ByteArrayMapImageProvider;
@@ -12,11 +12,11 @@ import com.pg85.otg.customobject.bo3.BO3;
 import com.pg85.otg.customobject.bo3.BO3Config;
 import com.pg85.otg.customobject.bo4.BO4;
 import com.pg85.otg.customobject.bo4.BO4Config;
-import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.MaterialPalette;
+import com.pg85.otg.util.nbt.NBTPalette;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
@@ -44,6 +44,7 @@ public class PackedPreset implements IPreset
     private long mapImageOffset;
 
     MaterialPalette materialPalette;
+    NBTPalette metadataPalette;
 
     DataInputStream stream;
     FileChannel channel;
@@ -93,7 +94,7 @@ public class PackedPreset implements IPreset
             objectOffsets.put(stream.readUTF(), stream.readLong());
         }
 
-        long resourcesOffset = stream.readLong();
+        long nbtOffset = stream.readLong();
 
         // Load world config
         channel.position(worldConfigOffset);
@@ -110,12 +111,16 @@ public class PackedPreset implements IPreset
             BiomeConfig biomeConfig = new BiomeConfig(biomeName, null, file.toPath(), biomeConfigMap, worldConfig, presetShortName, 1, OTG.getEngine().getBiomeResourceManager(), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName));
             biomeConfigs.add(biomeConfig);
         }
+        // Load object resources
+        channel.position(nbtOffset);
+        NBTPalette nbtPalette = NBTPalette.readFromStream(stream);
 
         PackedPreset preset = new PackedPreset(file.getName(), presetShortName, worldConfig, biomeConfigs);
 
         preset.mapImageOffset = mapOffset;
         preset.objectOffsets = objectOffsets;
         preset.materialPalette = materialPalette;
+        preset.metadataPalette = nbtPalette;
 
         preset.stream = stream;
         preset.channel = channel;
@@ -210,16 +215,16 @@ public class PackedPreset implements IPreset
             }
             switch (type) {
                 case 2:  // BO2
-                    BO2 config2 = BO2.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), materialPalette);
+                    BO2 config2 = BO2.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), materialPalette, metadataPalette);
                     config2.overrideName(name);
                     return config2;
                 case 3:  // BO3
-                    BO3Config config3 = BO3Config.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), this.shortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), materialPalette);
+                    BO3Config config3 = BO3Config.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), this.shortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), materialPalette, metadataPalette);
                     config3.overrideName(name);
                     return new BO3(name, null, config3);
                 case 4:  // BO4
                     BO4Config config4 = new BO4Config(null, false, this.shortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
-                    config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), materialPalette, true);
+                    config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), materialPalette, metadataPalette, true);
                     config4.overrideName(name);
                     return new BO4(name, null, config4);
             }

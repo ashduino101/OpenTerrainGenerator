@@ -1,5 +1,6 @@
 package com.pg85.otg.customobject.bo4;
 
+import com.pg85.otg.util.StringTable;
 import com.pg85.otg.config.standard.WorldStandardValues;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.constants.SettingsEnums.ConfigMode;
@@ -30,6 +31,7 @@ import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IModLoadedChecker;
 import com.pg85.otg.util.CompressionUtils;
 import com.pg85.otg.util.materials.MaterialPalette;
+import com.pg85.otg.util.nbt.NBTPalette;
 import com.pg85.otg.util.nbt.NamedBinaryTag;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.helpers.StreamHelper;
@@ -1376,13 +1378,13 @@ public class BO4Config extends CustomObjectConfigFile
 	}
 
 	private static final int bo4DataVersion = 6;
-	void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette) throws IOException
+	void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException
 	{		
 		stream.writeInt(bo4DataVersion);
 		// Version 5 added stripping
 		stream.writeBoolean(strip);
 		// Version 6 added paletted materials
-		stream.writeBoolean(materialPalette != null);
+		stream.writeBoolean(materialPalette != null && metadataPalette != null);
 		// Version 3 added fixedRotation
 		// Version 4 changed all enumerators to ordinals (instead of strings)
 		stream.writeByte(this.fixedRotation == null ? 0xff : this.fixedRotation.ordinal());
@@ -1462,7 +1464,7 @@ public class BO4Config extends CustomObjectConfigFile
 		BO4BlockFunction[] blocks = getBlocks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
 
 		BlockPacker packer = new BlockPacker(stream);
-		packer.packToStream(Arrays.asList(blocks), materialPalette);
+		packer.packToStream(Arrays.asList(blocks), materialPalette, metadataPalette);
 	}
 
 	private BO4Config readFromBO4DataFile(boolean getBlocks, ILogger logger, IMaterialReader materialReader) throws InvalidConfigException
@@ -1481,7 +1483,7 @@ public class BO4Config extends CustomObjectConfigFile
 					byte[] decompressedBytes = CompressionUtils.decompress(compressedBytes);
 					stream = new DataInputStream(new ByteArrayInputStream(decompressedBytes));
 
-					this.readFromStream(getBlocks, stream, logger, materialReader, null, false);
+					this.readFromStream(getBlocks, stream, logger, materialReader, null, null, false);
 					return this;
 				} catch (DataFormatException e1) {
 					e1.printStackTrace();
@@ -1518,7 +1520,7 @@ public class BO4Config extends CustomObjectConfigFile
 		return this;
 	}
 
-	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette, boolean fromPack) throws IOException, InvalidConfigException {
+	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette, NBTPalette metadataPalette, boolean fromPack) throws IOException, InvalidConfigException {
 		boolean inheritedBO3Loaded = true;
 		int version = stream.readInt();
 
@@ -1539,13 +1541,14 @@ public class BO4Config extends CustomObjectConfigFile
 		}
 
 		if (version >= 6) {
-			boolean useMaterialPalette = stream.readBoolean();
-			if (useMaterialPalette && materialPalette == null) {
-				throw new InvalidConfigException("BO4 requires material palette but none was provided!");
+			boolean usePalettes = stream.readBoolean();
+			if (usePalettes && (materialPalette == null || metadataPalette == null)) {
+				throw new InvalidConfigException("BO4 requires material and metadata palettes but none were provided!");
 			}
-			if (!useMaterialPalette) {
+			if (!usePalettes) {
 				// make sure not to use the material palette
 				materialPalette = null;
+				metadataPalette = null;
 			}
 		}
 
@@ -1870,7 +1873,7 @@ public class BO4Config extends CustomObjectConfigFile
 		// v4 uses BlockUnpacker (we get blocks regardless here)
 		if (version >= 4) {
 			BlockUnpacker unpacker = new BlockUnpacker();
-			newBlocks = unpacker.unpackFromStream(stream, BO4BlockFunction::new, materialReader, logger, materialPalette);
+			newBlocks = unpacker.unpackFromStream(stream, BO4BlockFunction::new, materialReader, logger, materialPalette, metadataPalette);
 
 			columnSizes = new short[this.xSize][this.zSize];
 			for (BlockFunction<?> block : newBlocks) {

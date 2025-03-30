@@ -11,6 +11,7 @@ import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.MaterialPalette;
+import com.pg85.otg.util.nbt.NBTPalette;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class BlockUnpacker {
 
     }
 
-    public List<BlockFunction<?>> unpackFromStream(DataInputStream stream, IBlockFunctionFactory nonRandomBlockFactory, IMaterialReader materialReader, ILogger logger, MaterialPalette materialPalette) throws IOException, InvalidConfigException {
+    public List<BlockFunction<?>> unpackFromStream(DataInputStream stream, IBlockFunctionFactory nonRandomBlockFactory, IMaterialReader materialReader, ILogger logger, MaterialPalette materialPalette, NBTPalette nbtPalette) throws IOException, InvalidConfigException {
         List<BlockFunction<?>> blocks = new ArrayList<>();
 
         // Nonrandom blocks
@@ -34,7 +35,11 @@ public class BlockUnpacker {
         if (hasNonRandomBlocks) {
             String[] metaDataNamesArr = new String[stream.readShort()];
             for (int i = 0; i < metaDataNamesArr.length; i++) {
-                metaDataNamesArr[i] = StreamHelper.readStringFromStream(stream);
+                if (nbtPalette == null) {
+                    metaDataNamesArr[i] = StreamHelper.readStringFromStream(stream);
+                } else {
+                    metaDataNamesArr[i] = nbtPalette.getNameFromIndex(stream.readUnsignedShort());
+                }
             }
 
             LocalMaterialData[] materialsArr = new LocalMaterialData[stream.readShort()];
@@ -108,7 +113,13 @@ public class BlockUnpacker {
                 short z = stream.readShort();
                 short idx = stream.readShort();
                 Optional<BlockFunction<?>> block = blocks.stream().filter(b -> b.x == x && b.y == y && b.z == z).findFirst();
-                block.ifPresent(blockFunction -> blockFunction.nbtName = metaDataNamesArr[idx]);
+                block.ifPresent(blockFunction -> {
+                    blockFunction.nbtName = metaDataNamesArr[idx];
+                    if (nbtPalette != null) {
+                        // Load the packed NBT
+                        blockFunction.nbt = nbtPalette.getNBTFromName(blockFunction.nbtName);
+                    }
+                });
             }
         }
 
@@ -150,6 +161,9 @@ public class BlockUnpacker {
                         rbf.blocks[j] = blockIdx == 0 ? null : materials[blockIdx - 1];
                         short metaDataIdx = stream.readShort();
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
+                        if (rbf.metaDataNames[j] != null && nbtPalette != null) {
+                            rbf.metaDataTags[j] = nbtPalette.getNBTFromName(rbf.metaDataNames[j]);
+                        }
                     }
                 }
             } else if (randomBlockType == 4) {
@@ -169,6 +183,9 @@ public class BlockUnpacker {
                         rbf.blocks[j] = blockIdx == 0 ? null : materials[blockIdx - 1];
                         short metaDataIdx = stream.readShort();
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
+                        if (rbf.metaDataNames[j] != null && nbtPalette != null) {
+                            rbf.metaDataTags[j] = nbtPalette.getNBTFromName(rbf.metaDataNames[j]);
+                        }
                     }
                 }
             } else {

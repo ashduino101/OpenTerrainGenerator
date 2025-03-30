@@ -20,6 +20,7 @@ import org.bukkit.entity.Player;
 public class ExportPresetPackCommand extends BaseCommand
 {
     private static boolean isRunning = false;
+    private static PresetPacker packer;
 
 
     public ExportPresetPackCommand() {
@@ -63,13 +64,15 @@ public class ExportPresetPackCommand extends BaseCommand
             isRunning = true;
             sender.sendMessage("Packing preset for distribution, this might take a while...");
             sender.sendMessage("Run this command again to see progress.");
+
+            packer = new PresetPacker();
             new Thread(() -> {
                 String outputPath = OTG.getEngine().getPresetsDirectory() + "/" + preset.getId() + ".preset";
                 try (FileOutputStream file = new FileOutputStream(outputPath))
                 {
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("Packing preset to %s", outputPath));
 
-                    PresetPacker.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
+                    packer.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
 
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Preset export complete.");
                     sender.sendMessage("OTG preset export is done.");
@@ -82,7 +85,7 @@ public class ExportPresetPackCommand extends BaseCommand
                 }
             }).start();
         } else {
-            sender.sendMessage("OTG preset export is running.");
+            sender.sendMessage("OTG preset export is running.\nStatus: " + packer.getStatusString());
         }
         return true;
     }

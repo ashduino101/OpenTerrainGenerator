@@ -1,4 +1,4 @@
-package com.pg85.otg.config.io;
+package com.pg85.otg.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -17,10 +17,6 @@ public final class StringTable
     public StringTable()
     {
         this.strings = new ArrayList<>();
-    }
-
-    void add(String name) {
-        strings.add(name);
     }
 
     public void packToStream(DataOutput stream) throws IOException
@@ -45,7 +41,7 @@ public final class StringTable
         return table;
     }
 
-    int getOrRegisterString(String value)
+    public int getOrRegisterString(String value)
     {
         if (!strings.contains(value))
         {
@@ -54,7 +50,11 @@ public final class StringTable
         return strings.indexOf(value);
     }
 
-    String getStringById(int id) {
+    public String getStringById(int id) {
         return strings.get(id);
+    }
+
+    public List<String> getAllStoredStrings() {
+        return strings;
     }
 }

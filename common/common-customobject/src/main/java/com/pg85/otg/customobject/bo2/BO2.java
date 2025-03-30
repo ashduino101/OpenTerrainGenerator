@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.Map.Entry;
 
+import com.pg85.otg.util.StringTable;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.CustomObjectManager;
@@ -37,6 +38,7 @@ import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.LocalMaterials;
 import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.materials.MaterialSet;
+import com.pg85.otg.util.nbt.NBTPalette;
 
 /**
  * The good old BO2.
@@ -574,10 +576,11 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 	}
 
 	private static final int bo2DataVersion = 2;
-	public void writeToStream(DataOutput stream, MaterialPalette materialPalette) throws IOException
+	public void writeToStream(DataOutput stream, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException
 	{
 		stream.writeShort(bo2DataVersion);
-		stream.writeBoolean(materialPalette != null);
+		// metadataPalette isn't actually used, but we need it for the BlockPacker
+		stream.writeBoolean(materialPalette != null && metadataPalette != null);
 
 		this.spawnOnBlockType.writeToStream(stream);
 		this.collisionBlockType.writeToStream(stream);
@@ -601,10 +604,10 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		stream.writeInt(this.spawnElevationMax);
 
 		BlockPacker packer = new BlockPacker(stream);
-		packer.packToStream(Arrays.asList(this.data[0]), materialPalette);
+		packer.packToStream(Arrays.asList(this.data[0]), materialPalette, metadataPalette);
 	}
 
-	public static BO2 readFromStream(DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette) throws Exception
+	public static BO2 readFromStream(DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette, NBTPalette nbtPalette) throws Exception
 	{
 		short version = stream.readShort();
 		if (version > bo2DataVersion) {
@@ -612,6 +615,7 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		}
 
 		if (version >= 2) {
+			// BO2s don't even use the NBT palette so no need to check for that here
 			boolean useMaterialPalette = stream.readBoolean();
 			if (useMaterialPalette && materialPalette == null) {
 				throw new InvalidConfigException("BO2 requires material palette but none was provided!");
@@ -649,7 +653,7 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 
 		BlockUnpacker unpacker = new BlockUnpacker();
 		newConfig.data = new ObjectCoordinate[4][];
-		List<BlockFunction<?>> coordinates = unpacker.unpackFromStream(stream, ObjectCoordinate::new, materialReader, logger, materialPalette);
+		List<BlockFunction<?>> coordinates = unpacker.unpackFromStream(stream, ObjectCoordinate::new, materialReader, logger, materialPalette, nbtPalette);
 
 		newConfig.data[0] = new ObjectCoordinate[coordinates.size()];
 		newConfig.data[1] = new ObjectCoordinate[coordinates.size()];

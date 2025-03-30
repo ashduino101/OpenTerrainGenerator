@@ -1,14 +1,21 @@
 package com.pg85.otg.customobject.util;
 
+import com.pg85.otg.util.Pair;
+import com.pg85.otg.util.StringTable;
 import com.pg85.otg.customobject.bo3.bo3function.BO3RandomBlockFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4RandomBlockFunction;
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
 import com.pg85.otg.util.helpers.StreamHelper;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.MaterialPalette;
+import com.pg85.otg.util.nbt.NBTPalette;
+import com.pg85.otg.util.nbt.NamedBinaryTag;
 
 import java.io.DataOutput;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,10 +29,12 @@ public class BlockPacker {
         this.stream = output;
     }
 
-    public void packToStream(List<BlockFunction<?>> blocks, MaterialPalette materialPalette) throws IOException {
+    public void packToStream(List<BlockFunction<?>> blocks, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
         List<BlockFunction<?>> nonRandomBlocks = blocks.stream().filter(b ->
                 !(b instanceof BO3RandomBlockFunction || b instanceof BO4RandomBlockFunction)
         ).collect(Collectors.toList());
+
+        String baseDir = blocks.isEmpty() ? null : blocks.get(0).getHolder().getFile().getParent();
 
         // Nonrandom blocks
         stream.writeBoolean(!nonRandomBlocks.isEmpty());  // hasNonRandomBlocks
@@ -39,19 +48,35 @@ public class BlockPacker {
                 if (block.material != null && !materials.contains(block.material.toString())) {
                     materials.add(block.material.toString());
                 }
-                if (block.nbtName != null) {
+                if (block.nbtName != null && block.nbt != null) {
                     if (!metaDataNames.contains(block.nbtName)) {
                         metaDataNames.add(block.nbtName);
                     }
+                    String path = baseDir + File.separator + block.nbtName;
+                    Path p = Paths.get(path);
+                    String abs = p.toFile().getCanonicalPath();
+
+                    metadataPalette.getOrRegisterNBT(abs, block.nbt);
                     blockNbt.put(new int[]{block.x, block.y, block.z}, metaDataNames.indexOf(block.nbtName));
                 }
             }
 
             String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
 
+            // All blocks should have the same holder here
+
+            // metadataNames should be empty if blocks is empty
             stream.writeShort(metaDataNamesArr.length);
             for (String s : metaDataNamesArr) {
-                StreamHelper.writeStringToStream(stream, s);
+                if (metadataPalette == null) {
+                    StreamHelper.writeStringToStream(stream, s);
+                } else {
+                    String path = baseDir + File.separator + s;
+                    Path p = Paths.get(path);
+                    String abs = p.toFile().getCanonicalPath();
+
+                    stream.writeShort(metadataPalette.get(abs));
+                }
             }
             String[] materialsArr = materials.toArray(new String[0]);
 
@@ -172,14 +197,20 @@ public class BlockPacker {
         stream.writeBoolean(!randomBlocks.isEmpty());  // hasRandomBlocks
         if (!randomBlocks.isEmpty()) {
             Set<LocalMaterialData> localMaterialPalette = new HashSet<>();
-            Set<String> metaDataPalette = new HashSet<>();
+            Set<Pair<String, NamedBinaryTag>> localMetaDataPalette = new HashSet<>();
             for (BlockFunction<?> block : randomBlocks) {
                 if (block instanceof BO3RandomBlockFunction) {
-                    localMaterialPalette.addAll(Arrays.asList(((BO3RandomBlockFunction) block).blocks));
-                    metaDataPalette.addAll(Arrays.asList(((BO3RandomBlockFunction) block).metaDataNames));
+                    BO3RandomBlockFunction bo3Block = (BO3RandomBlockFunction) block;
+                    localMaterialPalette.addAll(Arrays.asList(bo3Block.blocks));
+                    for (int i = 0; i < bo3Block.metaDataNames.length; i++) {
+                        localMetaDataPalette.add(Pair.of(bo3Block.metaDataNames[i], bo3Block.metaDataTags[i]));
+                    }
                 } else if (block instanceof BO4RandomBlockFunction) {
-                    localMaterialPalette.addAll(Arrays.asList(((BO4RandomBlockFunction) block).blocks));
-                    metaDataPalette.addAll(Arrays.asList(((BO4RandomBlockFunction) block).metaDataNames));
+                    BO4RandomBlockFunction bo4Block = (BO4RandomBlockFunction) block;
+                    localMaterialPalette.addAll(Arrays.asList(bo4Block.blocks));
+                    for (int i = 0; i < bo4Block.metaDataNames.length; i++) {
+                        localMetaDataPalette.add(Pair.of(bo4Block.metaDataNames[i], bo4Block.metaDataTags[i]));
+                    }
                 }
             }
 
@@ -192,13 +223,21 @@ public class BlockPacker {
                 }
             }
 
-            stream.writeInt(metaDataPalette.size());
-            for (String m : metaDataPalette) {
-                StreamHelper.writeStringToStream(stream, m);
+            stream.writeInt(localMetaDataPalette.size());
+            for (Pair<String, NamedBinaryTag> m : localMetaDataPalette) {
+                if (metadataPalette == null) {
+                    StreamHelper.writeStringToStream(stream, m.getFirst());
+                } else {
+                    String path = baseDir + File.separator + m.getFirst();
+                    Path p = Paths.get(path);
+                    String abs = p.toFile().getCanonicalPath();
+
+                    stream.writeShort(metadataPalette.getOrRegisterNBT(abs, m.getSecond()));
+                }
             }
 
             List<LocalMaterialData> indexableMaterials = new ArrayList<>(localMaterialPalette);
-            List<String> indexableMetaData = new ArrayList<>(metaDataPalette);
+            List<String> indexableMetaData = localMetaDataPalette.stream().map(Pair::getFirst).collect(Collectors.toList());
 
             stream.writeInt(randomBlocks.size());
             byte type = 0;
