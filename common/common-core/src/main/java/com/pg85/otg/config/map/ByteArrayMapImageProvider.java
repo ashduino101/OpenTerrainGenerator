@@ -9,13 +9,17 @@ import java.io.IOException;
 
 public class ByteArrayMapImageProvider implements IMapImageProvider {
     private final byte[] data;
+    BufferedImage cachedImage;
 
     public ByteArrayMapImageProvider(byte[] imageData) {
         this.data = imageData;
+        this.cachedImage = null;
     }
 
     @Override
     public BufferedImage getBiomeMap() throws IOException {
-        return ImageIO.read(new ByteArrayInputStream(this.data));
+        if (this.cachedImage != null) return this.cachedImage;
+        this.cachedImage = ImageIO.read(new ByteArrayInputStream(this.data));
+        return this.cachedImage;
     }
 }
