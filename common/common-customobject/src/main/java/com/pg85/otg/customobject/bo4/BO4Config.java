@@ -1376,10 +1376,12 @@ public class BO4Config extends CustomObjectConfigFile
 		return null;
 	}
 
-	private static int bo4DataVersion = 4;
-	void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
+	private static final int bo4DataVersion = 5;
+	void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
 	{		
 		stream.writeInt(bo4DataVersion);
+		// Version 5 added stripping
+		stream.writeBoolean(strip);
 		// Version 3 added fixedRotation
 		// Version 4 changed all enumerators to ordinals (instead of strings)
 		stream.writeByte(this.fixedRotation == null ? 0xff : this.fixedRotation.ordinal());
@@ -1393,8 +1395,10 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeInt(this.maxY);
 		stream.writeInt(this.minZ);
 		stream.writeInt(this.maxZ);
-		StreamHelper.writeStringToStream(stream, this.author);
-		StreamHelper.writeStringToStream(stream, this.description);
+		if (!strip) {
+			StreamHelper.writeStringToStream(stream, this.author);
+			StreamHelper.writeStringToStream(stream, this.description);
+		}
 		stream.writeByte(this.settingsMode.ordinal());
 		stream.writeInt(this.frequency);
 		stream.writeByte(this.spawnHeight.ordinal());
@@ -1521,6 +1525,11 @@ public class BO4Config extends CustomObjectConfigFile
 			throw new InvalidConfigException("BO4 data version too new (" + version + ")! I only know up to " + bo4DataVersion);
 		}
 
+		boolean isStripped = false;
+		if (version >= 5) {
+			isStripped = stream.readBoolean();
+		}
+
 		// Version 2 made breaking changes
 		if (version < 2)
 		{
@@ -1552,8 +1561,12 @@ public class BO4Config extends CustomObjectConfigFile
 		int minZ = stream.readInt();
 		int maxZ = stream.readInt();
 
-		String author = StreamHelper.readStringFromStream(stream);
-		String description = StreamHelper.readStringFromStream(stream);
+		String author = "Unknown";
+		String description = "Unknown";
+		if (!isStripped) {
+			author = StreamHelper.readStringFromStream(stream);
+			description = StreamHelper.readStringFromStream(stream);
+		}
 		ConfigMode settingsMode;
 		if (version < 4) {
 			settingsMode = ConfigMode.valueOf(StreamHelper.readStringFromStream(stream));

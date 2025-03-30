@@ -768,13 +768,16 @@ public class BO3Config extends CustomObjectConfigFile
 		return null;
 	}
 
-	private static final int bo3DataVersion = 3;
-	public void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
+	private static final int bo3DataVersion = 4;
+	public void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
 	{
 		stream.writeInt(bo3DataVersion);
+		stream.writeBoolean(strip);
 
-		StreamHelper.writeStringToStream(stream, this.author);
-		StreamHelper.writeStringToStream(stream, this.description);
+		if (!strip) {
+			StreamHelper.writeStringToStream(stream, this.author);
+			StreamHelper.writeStringToStream(stream, this.description);
+		}
 		// We don't write SettingsMode here
 
 		stream.writeBoolean(this.tree);
@@ -801,7 +804,9 @@ public class BO3Config extends CustomObjectConfigFile
 
 		stream.writeBoolean(this.doReplaceBlocks);
 
-		stream.writeBoolean(this.isOTGPlus);
+		if (!strip) {
+			stream.writeBoolean(this.isOTGPlus);
+		}
 
 		// Resources
 		// TODO: rewrite this part (it probably doesn't work)
@@ -860,10 +865,20 @@ public class BO3Config extends CustomObjectConfigFile
 			throw new UnsupportedOperationException("BO3 data version too new (" + version + "). I only know up to " + bo3DataVersion);
 		}
 
+		boolean isStripped = false;
+		if (version >= 4) {
+			isStripped = stream.readBoolean();
+		}
+
 		BO3Config config = new BO3Config(null);
 
-		config.author = StreamHelper.readStringFromStream(stream);
-		config.description = StreamHelper.readStringFromStream(stream);
+		if (isStripped) {
+			config.author = "Unknown";
+			config.description = "Unknown";
+		} else {
+			config.author = StreamHelper.readStringFromStream(stream);
+			config.description = StreamHelper.readStringFromStream(stream);
+		}
 
 		config.tree = stream.readBoolean();
 		config.frequency = stream.readByte();
@@ -891,7 +906,7 @@ public class BO3Config extends CustomObjectConfigFile
 
 		config.doReplaceBlocks = stream.readBoolean();
 
-		config.isOTGPlus = stream.readBoolean();
+		config.isOTGPlus = !isStripped && stream.readBoolean();
 
 		// Resources
 		BoundingBox box = BoundingBox.newEmptyBox();
