@@ -134,7 +134,7 @@ public class PackedPreset implements IPreset
                     break;
                 case 4:  // BO4
                     BO4Config config4 = new BO4Config(null, false, presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
-                    config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), materialPalette);
+                    config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), materialPalette, true);
                     config4.overrideName(objectOffset.getKey());
                     OTG.getEngine().getCustomObjectManager().registerGlobalObject(new BO4(objectOffset.getKey(), null, config4));
                     break;

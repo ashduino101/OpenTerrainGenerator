@@ -5,7 +5,6 @@ import com.pg85.otg.constants.Constants;
 import com.pg85.otg.constants.SettingsEnums.ConfigMode;
 import com.pg85.otg.customobject.CustomObject;
 import com.pg85.otg.customobject.CustomObjectManager;
-import com.pg85.otg.customobject.bo3.bo3function.BO3BlockFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4BlockFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4BranchFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4EntityFunction;
@@ -44,7 +43,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 public class BO4Config extends CustomObjectConfigFile
@@ -178,7 +176,7 @@ public class BO4Config extends CustomObjectConfigFile
 		
 	private boolean isCollidable = false;
 	boolean isBO4Data = false;
-	private boolean loadedFromStream = false;
+	private boolean loadedFromPack = false;
 	private String overrideName;
 
 	/**
@@ -294,7 +292,7 @@ public class BO4Config extends CustomObjectConfigFile
 		// it won't pick up smoothing area settings if it is also used in another structure.
 		if(this.heightMap == null)
 		{
-			if(this.isBO4Data && fromFile && !this.loadedFromStream)
+			if(this.isBO4Data && fromFile && !this.loadedFromPack)
 			{
 				BO4Config bo4Config = null;
 				try
@@ -415,7 +413,7 @@ public class BO4Config extends CustomObjectConfigFile
 	
 	private BO4BlockFunction[] getBlocks(boolean fromFile, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker)
 	{
-		if(fromFile && this.isBO4Data && !this.loadedFromStream)
+		if(fromFile && this.isBO4Data && !this.loadedFromPack)
 		{
 			BO4Config bo4Config = null;
 			try
@@ -1483,7 +1481,7 @@ public class BO4Config extends CustomObjectConfigFile
 					byte[] decompressedBytes = CompressionUtils.decompress(compressedBytes);
 					stream = new DataInputStream(new ByteArrayInputStream(decompressedBytes));
 
-					this.readFromStream(getBlocks, stream, logger, materialReader, null);
+					this.readFromStream(getBlocks, stream, logger, materialReader, null, false);
 					return this;
 				} catch (DataFormatException e1) {
 					e1.printStackTrace();
@@ -1520,7 +1518,7 @@ public class BO4Config extends CustomObjectConfigFile
 		return this;
 	}
 
-	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette) throws IOException, InvalidConfigException {
+	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette, boolean fromPack) throws IOException, InvalidConfigException {
 		boolean inheritedBO3Loaded = true;
 		int version = stream.readInt();
 
@@ -1941,7 +1939,7 @@ public class BO4Config extends CustomObjectConfigFile
 		this.branchesBO4 = branchesBO4;
 		this.entityDataBO4 = entityDataBO4;
 
-		this.loadedFromStream = true;
+		this.loadedFromPack = fromPack;
 
 		// Reconstruct blocks
 		if(getBlocks)
