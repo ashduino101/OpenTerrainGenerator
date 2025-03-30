@@ -31,7 +31,7 @@ public class ExportPresetPackCommand extends BaseCommand
     @Override
     public void build(LiteralArgumentBuilder<CommandSource> builder)
     {
-        builder.then(Commands.literal("exportpreset")
+        builder.then(Commands.literal("pack")
                 .executes(context -> exportPreset(context.getSource()))
         );
     }

@@ -1,7 +1,6 @@
 package com.pg85.otg.customobject.util;
 
 import com.pg85.otg.util.Pair;
-import com.pg85.otg.util.StringTable;
 import com.pg85.otg.customobject.bo3.bo3function.BO3RandomBlockFunction;
 import com.pg85.otg.customobject.bo4.bo4function.BO4RandomBlockFunction;
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
