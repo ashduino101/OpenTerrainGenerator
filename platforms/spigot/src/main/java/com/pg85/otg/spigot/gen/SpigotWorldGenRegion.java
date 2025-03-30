@@ -655,6 +655,17 @@ public class SpigotWorldGenRegion extends LocalWorldGenRegion
 				worldGenRegion.addAllEntities(entity);
 			}
 		} else {
+			if (nbtTagCompound.hasKeyOfType("CustomName", 8)) {
+				// Validate custom name
+				String name = nbtTagCompound.getString("CustomName");
+				try {
+					// Try to parse the name
+					IChatBaseComponent.ChatSerializer.a(name);
+				} catch (JsonSyntaxException e) {
+					this.logger.log(LogLevel.ERROR, LogCategory.MOBS, "Entity NBT has invalid custom name: " + name);
+					nbtTagCompound.remove("CustomName");
+				}
+			}
 			// Create entity with nbt data
 			entity = EntityTypes.a(nbtTagCompound, this.worldGenRegion.getMinecraftWorld(), (entity1) ->
 			{
