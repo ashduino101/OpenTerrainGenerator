@@ -59,7 +59,7 @@ public class BlockPacker {
                     String abs = p.toFile().getCanonicalPath();
                     relToAbsNBTPath.put(block.nbtName, abs);
 
-                    metadataPalette.getOrRegisterNBT(abs, block.nbt);
+                    if (metadataPalette != null) metadataPalette.getOrRegisterNBT(abs, block.nbt);
                     blockNbt.put(new int[]{block.x, block.y, block.z}, metaDataNames.indexOf(block.nbtName));
                 }
             }

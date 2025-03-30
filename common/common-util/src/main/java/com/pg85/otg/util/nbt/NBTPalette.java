@@ -44,6 +44,9 @@ public class NBTPalette {
         for (String item : names.getAllStoredStrings())
         {
             NamedBinaryTag tag = this.nameToNbt.get(item);
+            // FIXME: how does this happen?
+            stream.writeBoolean(tag == null);
+            if (tag == null) continue;
 
             ByteArrayOutputStream nbtStream = new ByteArrayOutputStream();
             tag.writeTo(nbtStream, false);
@@ -64,10 +67,16 @@ public class NBTPalette {
         {
             String name = "packed$" + (i + 1) + ".nbt";
             table.getOrRegisterString(name);
-            int len = stream.readInt();
-            byte[] buf = new byte[len];
-            stream.readFully(buf);
-            NamedBinaryTag tag = NamedBinaryTag.readFrom(new ByteArrayInputStream(buf), false);
+            boolean isNull = stream.readBoolean();
+            NamedBinaryTag tag;
+            if (isNull) {
+                tag = null;
+            } else {
+                int len = stream.readInt();
+                byte[] buf = new byte[len];
+                stream.readFully(buf);
+                tag = NamedBinaryTag.readFrom(new ByteArrayInputStream(buf), false);
+            }
             palette.nameToNbt.put(name, tag);
         }
 

@@ -12,6 +12,7 @@ import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.nbt.NBTPalette;
+import com.pg85.otg.util.nbt.NamedBinaryTag;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -139,7 +140,11 @@ public class BlockUnpacker {
             int metaDataPaletteSize = stream.readInt();
             String[] metaDataPalette = new String[metaDataPaletteSize];
             for (int i = 0; i < metaDataPaletteSize; i++) {
-                metaDataPalette[i] = StreamHelper.readStringFromStream(stream);
+                if (nbtPalette == null) {
+                    metaDataPalette[i] = StreamHelper.readStringFromStream(stream);
+                } else {
+                    metaDataPalette[i] = nbtPalette.getNameFromIndex(stream.readUnsignedShort());
+                }
             }
 
             int numRandomBlocks = stream.readInt();
@@ -155,6 +160,7 @@ public class BlockUnpacker {
                     rbf.blocks = new LocalMaterialData[rbf.blockCount];
                     rbf.blockChances = new byte[rbf.blockCount];
                     rbf.metaDataNames = new String[rbf.blockCount];
+                    rbf.metaDataTags = new NamedBinaryTag[rbf.blockCount];
                     for (int j = 0; j < rbf.blockCount; j++) {
                         rbf.blockChances[j] = stream.readByte();
                         short blockIdx = stream.readShort();
@@ -177,6 +183,7 @@ public class BlockUnpacker {
                     rbf.blocks = new LocalMaterialData[rbf.blockCount];
                     rbf.blockChances = new byte[rbf.blockCount];
                     rbf.metaDataNames = new String[rbf.blockCount];
+                    rbf.metaDataTags = new NamedBinaryTag[rbf.blockCount];
                     for (int j = 0; j < rbf.blockCount; j++) {
                         rbf.blockChances[j] = stream.readByte();
                         short blockIdx = stream.readShort();
