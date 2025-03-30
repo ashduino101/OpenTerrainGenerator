@@ -12,10 +12,8 @@ import com.pg85.otg.customobject.bo3.BO3;
 import com.pg85.otg.customobject.bo3.BO3Config;
 import com.pg85.otg.customobject.bo4.BO4;
 import com.pg85.otg.customobject.bo4.BO4Config;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.IMapImageProvider;
-import com.pg85.otg.interfaces.IPreset;
-import com.pg85.otg.interfaces.IWorldConfig;
+import com.pg85.otg.exceptions.InvalidConfigException;
+import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.MaterialPalette;
@@ -40,9 +38,15 @@ public class PackedPreset implements IPreset
     private IWorldConfig worldConfig;
     private HashMap<String, IBiomeConfig> biomeConfigs = new HashMap<String, IBiomeConfig>();
     private int majorVersion;
-    private String author;
-    private String description;
     private IMapImageProvider mapImage;
+
+    private Map<String, Long> objectOffsets;
+    private long mapImageOffset;
+
+    MaterialPalette materialPalette;
+
+    DataInputStream stream;
+    FileChannel channel;
 
     public static IPreset loadPresetFromPack(File file) throws Exception {
         FileInputStream fileStream = new FileInputStream(file);
@@ -107,54 +111,14 @@ public class PackedPreset implements IPreset
             biomeConfigs.add(biomeConfig);
         }
 
-        // Load custom objects
-        // TODO: load these only when needed
-        for (Map.Entry<String, Long> objectOffset : objectOffsets.entrySet()) {
-            channel.position(objectOffset.getValue());
-            byte type = stream.readByte();
-            int len = stream.readInt();
-            byte[] data = new byte[len];
-            int got = stream.read(data);
-            if (got != len) {
-                OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Truncated packed biome object " + objectOffset.getKey() + "!");
-                continue;
-            }
-            switch (type) {
-                case 2:  // BO2
-                    OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("%s at %d", objectOffset.getKey(), objectOffset.getValue()));
-                    BO2 config2 = BO2.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), materialPalette);
-                    config2.overrideName(objectOffset.getKey());
-                    OTG.getEngine().getCustomObjectManager().registerGlobalObject(config2);
-                    break;
-                case 3:  // BO3
-                    OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("%s at %d", objectOffset.getKey(), objectOffset.getValue()));
-                    BO3Config config3 = BO3Config.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), materialPalette);
-                    config3.overrideName(objectOffset.getKey());
-                    OTG.getEngine().getCustomObjectManager().registerGlobalObject(new BO3(objectOffset.getKey(), null, config3));
-                    break;
-                case 4:  // BO4
-                    BO4Config config4 = new BO4Config(null, false, presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
-                    config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), materialPalette, true);
-                    config4.overrideName(objectOffset.getKey());
-                    OTG.getEngine().getCustomObjectManager().registerGlobalObject(new BO4(objectOffset.getKey(), null, config4));
-                    break;
-            }
-        }
-
         PackedPreset preset = new PackedPreset(file.getName(), presetShortName, worldConfig, biomeConfigs);
 
-        // Load map if necessary
-        if (mapOffset != -1) {
-            channel.position(mapOffset);
-            int length = stream.readInt();
-            byte[] data = new byte[length];
-            int numRead = stream.read(data);
-            if (numRead != length) {
-                throw new IOException("failed to read whole image");
-            }
+        preset.mapImageOffset = mapOffset;
+        preset.objectOffsets = objectOffsets;
+        preset.materialPalette = materialPalette;
 
-            preset.mapImage = new ByteArrayMapImageProvider(data);
-        }
+        preset.stream = stream;
+        preset.channel = channel;
 
         return preset;
     }
@@ -200,7 +164,24 @@ public class PackedPreset implements IPreset
 
     @Override
     public IMapImageProvider getMapImageSource() {
-        return this.mapImage;
+        if (this.mapImage != null) return this.mapImage;
+        if (this.mapImageOffset != -1) {
+            try {
+                this.channel.position(this.mapImageOffset);
+                int length = stream.readInt();
+                byte[] data = new byte[length];
+                int numRead = stream.read(data);
+                if (numRead != length) {
+                    throw new IOException("failed to read whole image");
+                }
+
+                this.mapImage = new ByteArrayMapImageProvider(data);
+                return this.mapImage;
+            } catch (IOException e) {
+                OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.MAIN, "Unable to load map image: " + e);
+            }
+        }
+        return null;
     }
 
     @Override
@@ -214,7 +195,48 @@ public class PackedPreset implements IPreset
     }
 
     @Override
+    public ICustomObject getCustomObject(String name) {
+//        OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.CUSTOM_OBJECTS, "Loading from pack: " + name);
+        Long objectOffset = this.objectOffsets.get(name);
+        if (objectOffset == null) return null;
+        try {
+            channel.position(objectOffset);
+            byte type = stream.readByte();
+            int len = stream.readInt();
+            byte[] data = new byte[len];
+            int got = stream.read(data);
+            if (got != len) {
+                OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Truncated packed biome object " + name + "!");
+                return null;
+            }
+            switch (type) {
+                case 2:  // BO2
+                    BO2 config2 = BO2.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), materialPalette);
+                    config2.overrideName(name);
+                    return config2;
+                case 3:  // BO3
+                    BO3Config config3 = BO3Config.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), this.shortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), materialPalette);
+                    config3.overrideName(name);
+                    return new BO3(name, null, config3);
+                case 4:  // BO4
+                    BO4Config config4 = new BO4Config(null, false, this.shortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+                    config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(this.shortName), materialPalette, true);
+                    config4.overrideName(name);
+                    return new BO4(name, null, config4);
+            }
+        } catch (Exception e) {
+            OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Failed to load packed custom object " + name + ": " + e);
+        }
+        return null;
+    }
+
+    @Override
     public int getMajorVersion() {
         return this.majorVersion;
+    }
+
+    @Override
+    public boolean isPacked() {
+        return true;
     }
 }

@@ -9,6 +9,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.pg85.otg.OTG;
 import com.pg85.otg.config.biome.BiomeConfig;
 import com.pg85.otg.config.biome.BiomeConfigFinder;
 import com.pg85.otg.config.biome.BiomeConfigFinder.BiomeConfigStub;
@@ -114,6 +115,7 @@ public abstract class LocalPresetLoader
 						{
 							PresetFolder preset = loadPreset(presetDir.toPath(), biomeResourcesManager, logger);
 							this.presets.put(preset.getId(), preset);
+							OTG.getEngine().getCustomObjectManager().getGlobalObjects().getPresetsById().put(preset.getId(), preset);
 							this.aliasMap.put(preset.getShortPresetName(), preset.getId());
 							break;
 						}
@@ -127,6 +129,7 @@ public abstract class LocalPresetLoader
 							continue;
 						}
 						this.presets.put(preset.getId(), preset);
+						OTG.getEngine().getCustomObjectManager().getGlobalObjects().getPresetsById().put(preset.getId(), preset);
 						this.aliasMap.put(preset.getShortPresetName(), preset.getId());
 					} catch (Exception e) {
 						StringWriter sw = new StringWriter();

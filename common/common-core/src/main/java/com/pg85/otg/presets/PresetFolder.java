@@ -7,10 +7,7 @@ import java.util.HashMap;
 import com.pg85.otg.config.biome.BiomeConfig;
 import com.pg85.otg.config.map.FileMapImageProvider;
 import com.pg85.otg.config.world.WorldConfig;
-import com.pg85.otg.interfaces.IBiomeConfig;
-import com.pg85.otg.interfaces.IMapImageProvider;
-import com.pg85.otg.interfaces.IPreset;
-import com.pg85.otg.interfaces.IWorldConfig;
+import com.pg85.otg.interfaces.*;
 
 /**
  * Represents an OTG preset, with all its world and biome configs, stored in /config/OpenTerrainGenerator/Presets/\<PresetName\>/.
@@ -99,10 +96,20 @@ public class PresetFolder implements IPreset {
 		return new ArrayList<>(this.biomeConfigs.keySet());
 		
 	}
-	
+
+	@Override
+	public ICustomObject getCustomObject(String name) {
+		throw new UnsupportedOperationException("Getting an object directly from a preset folder is not yet supported!");
+	}
+
 	@Override
 	public int getMajorVersion()
 	{
 		return this.majorVersion;
+	}
+
+	@Override
+	public boolean isPacked() {
+		return false;
 	}
 }

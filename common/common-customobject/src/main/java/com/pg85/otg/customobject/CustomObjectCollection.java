@@ -5,6 +5,7 @@ import com.pg85.otg.customobject.config.CustomObjectResourcesManager;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IModLoadedChecker;
+import com.pg85.otg.interfaces.IPreset;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.minecraft.TreeType;
@@ -30,6 +31,8 @@ public class CustomObjectCollection
 	private HashMap<String, ArrayList<CustomObject>> objectsPerPreset = new HashMap<String, ArrayList<CustomObject>>();
 	private HashMap<String, HashMap<String, CustomObject>> objectsByNamePerPreset = new HashMap<String, HashMap<String, CustomObject>>();
 	private HashMap<String, ArrayList<String>> objectsNotFoundPerPreset = new HashMap<String, ArrayList<String>>();
+	// TODO: we should have a better way of loading objects from packed presets
+	private HashMap<String, IPreset> presetsById = new HashMap<>();
 
 	private HashMap<String, File> customObjectFilesGlobalObjects = null;
 	private HashMap<String, File> globalTemplates = null;
@@ -403,6 +406,14 @@ public class CustomObjectCollection
 			{
 				return null;
 			}
+
+			// Is it a packed preset?
+			IPreset preset = this.presetsById.get(presetFolderName);
+			// We can only do this with packed presets, unfortunately
+			if (preset.isPacked()) {
+				CustomObject obj = (CustomObject) preset.getCustomObject(name);
+				if (obj != null) return obj;
+			}
 	
 			// Index GlobalObjects and preset's Objects directories
 	
@@ -566,5 +577,9 @@ public class CustomObjectCollection
 				}
 			}
 		}
+	}
+
+	public HashMap<String, IPreset> getPresetsById() {
+		return this.presetsById;
 	}
 }

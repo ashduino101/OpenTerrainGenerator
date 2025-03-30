@@ -22,5 +22,9 @@ public interface IPreset {
 
     ArrayList<String> getAllBiomeNames();
 
+    ICustomObject getCustomObject(String name);
+
     int getMajorVersion();
+
+    boolean isPacked();
 }
