@@ -43,7 +43,8 @@ public class PresetPacker
     private int totalBiomes = 0;
     private int processedObjects = 0;
     private int totalObjects = 0;
-    private PackingStage stage;
+    private PackingStage stage = PackingStage.Starting;
+    private final List<String> currentObjectPath = new ArrayList<>();
 
     public PresetPacker() {
 
@@ -173,9 +174,13 @@ public class PresetPacker
 
         // Resource offsets
         stream.writeLong(nbtOffset);
+
+        this.stage = PackingStage.Finished;
     }
 
-    private static void packBO4(BO4 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
+    private void packBO4(BO4 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
+        this.currentObjectPath.add(object.getName());
+
         ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
         DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
 
@@ -194,10 +199,12 @@ public class PresetPacker
         for (Branch branch : object.getBranches()) {
             if (branch instanceof BO4BranchFunction) {
                 List<String> branchNames = ((BO4BranchFunction)branch).getBranchObjectNames();
+                this.totalObjects += branchNames.size();
                 for (String name : branchNames) {
                     CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(name, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
                     if (bo == null) {
                         OTG.getEngine().getLogger().log(LogLevel.WARN, LogCategory.MAIN, String.format("Skipping non-existent branch '%s'", name));
+                        this.processedObjects++;
                         continue;
                     }
                     if (!offsets.containsKey(bo.getName())) {
@@ -209,12 +216,17 @@ public class PresetPacker
                             packBO2((BO2)bo, channel, stream, offsets, materialPalette, metadataPalette);
                         }
                     }
+                    this.processedObjects++;
                 }
             }
         }
+
+        this.currentObjectPath.remove(this.currentObjectPath.size() - 1);
     }
 
-    public static void packBO3(BO3 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
+    public void packBO3(BO3 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
+        this.currentObjectPath.add(object.getName());
+
         ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
         DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
 
@@ -233,10 +245,12 @@ public class PresetPacker
         for (Branch branch : object.getBranches(Rotation.NORTH)) {
             if (branch instanceof BO3BranchFunction) {
                 List<String> branchNames = ((BO3BranchFunction)branch).getBranchObjectNames();
+                this.totalObjects += branchNames.size();
                 for (String name : branchNames) {
                     CustomObject bo = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getObjectByName(name, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
                     if (bo == null) {
                         OTG.getEngine().getLogger().log(LogLevel.WARN, LogCategory.MAIN, String.format("Skipping non-existent branch '%s'", name));
+                        this.processedObjects++;
                         continue;
                     }
                     if (!offsets.containsKey(bo.getName())) {
@@ -248,12 +262,17 @@ public class PresetPacker
                             packBO2((BO2)bo, channel, stream, offsets, materialPalette, metadataPalette);
                         }
                     }
+                    this.processedObjects++;
                 }
             }
         }
+
+        this.currentObjectPath.remove(this.currentObjectPath.size() - 1);
     }
 
-    public static void packBO2(BO2 object, FileChannel channel, DataOutputStream stream, HashMap<String, Long> offsets, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
+    public void packBO2(BO2 object, FileChannel channel, DataOutputStream stream, HashMap<String, Long> offsets, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException {
+        this.currentObjectPath.add(object.getName());
+
         ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
         DataOutputStream dataOut = new DataOutputStream(byteArrayOut);
 
@@ -268,18 +287,27 @@ public class PresetPacker
         stream.writeInt(byteArrayOut.size());
         stream.write(byteArrayOut.toByteArray(), 0, byteArrayOut.size());
         stream.flush();
+
+        this.currentObjectPath.remove(this.currentObjectPath.size() - 1);
     }
 
     enum PackingStage {
+        Starting,
         WorldConfig,
         BiomeConfig,
         CustomObjects,
         MapImage,
         Resources,
-        MetaData
+        MetaData,
+        Finished
     }
 
     public String getStatusString() {
-        return String.format("%d/%d biomes packed, %d/%d objects packed, stage: %s", this.processedBiomes, this.totalBiomes, this.processedObjects, this.totalObjects, this.stage.toString());
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%d/%d biomes packed, %d/%d objects packed, stage: %s", this.processedBiomes, this.totalBiomes, this.processedObjects, this.totalObjects, this.stage.toString()));
+        if (this.stage == PackingStage.CustomObjects) {
+            sb.append("\nCurrent branch depth: ").append(this.currentObjectPath.size()).append(", working on object: ").append(this.currentObjectPath.get(this.currentObjectPath.size() - 1));
+        }
+        return sb.toString();
     }
 }

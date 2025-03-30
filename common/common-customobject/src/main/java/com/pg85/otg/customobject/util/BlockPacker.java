@@ -34,10 +34,12 @@ public class BlockPacker {
                 !(b instanceof BO3RandomBlockFunction || b instanceof BO4RandomBlockFunction)
         ).collect(Collectors.toList());
 
+        // All blocks should have the same holder here
         String baseDir = blocks.isEmpty() ? null : blocks.get(0).getHolder().getFile().getParent();
 
         // Nonrandom blocks
         stream.writeBoolean(!nonRandomBlocks.isEmpty());  // hasNonRandomBlocks
+        Map<String, String> relToAbsNBTPath = new HashMap<>();
         if (!nonRandomBlocks.isEmpty()) {
             ArrayList<String> materials = new ArrayList<>();
             ArrayList<String> metaDataNames = new ArrayList<>();
@@ -55,6 +57,7 @@ public class BlockPacker {
                     String path = baseDir + File.separator + block.nbtName;
                     Path p = Paths.get(path);
                     String abs = p.toFile().getCanonicalPath();
+                    relToAbsNBTPath.put(block.nbtName, abs);
 
                     metadataPalette.getOrRegisterNBT(abs, block.nbt);
                     blockNbt.put(new int[]{block.x, block.y, block.z}, metaDataNames.indexOf(block.nbtName));
@@ -63,19 +66,13 @@ public class BlockPacker {
 
             String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
 
-            // All blocks should have the same holder here
-
             // metadataNames should be empty if blocks is empty
             stream.writeShort(metaDataNamesArr.length);
             for (String s : metaDataNamesArr) {
                 if (metadataPalette == null) {
                     StreamHelper.writeStringToStream(stream, s);
                 } else {
-                    String path = baseDir + File.separator + s;
-                    Path p = Paths.get(path);
-                    String abs = p.toFile().getCanonicalPath();
-
-                    stream.writeShort(metadataPalette.get(abs));
+                    stream.writeShort(metadataPalette.get(relToAbsNBTPath.get(s)));
                 }
             }
             String[] materialsArr = materials.toArray(new String[0]);
