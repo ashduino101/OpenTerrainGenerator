@@ -662,7 +662,7 @@ public class SpigotWorldGenRegion extends LocalWorldGenRegion
 					// Try to parse the name
 					IChatBaseComponent.ChatSerializer.a(name);
 				} catch (JsonSyntaxException e) {
-					this.logger.log(LogLevel.ERROR, LogCategory.MOBS, "Entity NBT has invalid custom name: " + name);
+					this.logger.log(LogLevel.WARN, LogCategory.MOBS, "Entity NBT has invalid custom name: " + name);
 					nbtTagCompound.remove("CustomName");
 				}
 			}
