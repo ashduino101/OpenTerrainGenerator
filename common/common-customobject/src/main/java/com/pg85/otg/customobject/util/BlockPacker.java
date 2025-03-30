@@ -5,6 +5,7 @@ import com.pg85.otg.customobject.bo4.bo4function.BO4RandomBlockFunction;
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
 import com.pg85.otg.util.helpers.StreamHelper;
 import com.pg85.otg.util.materials.LocalMaterialData;
+import com.pg85.otg.util.materials.MaterialPalette;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class BlockPacker {
         this.stream = output;
     }
 
-    public void packToStream(List<BlockFunction<?>> blocks) throws IOException {
+    public void packToStream(List<BlockFunction<?>> blocks, MaterialPalette materialPalette) throws IOException {
         List<BlockFunction<?>> nonRandomBlocks = blocks.stream().filter(b ->
                 !(b instanceof BO3RandomBlockFunction || b instanceof BO4RandomBlockFunction)
         ).collect(Collectors.toList());
@@ -47,16 +48,20 @@ public class BlockPacker {
             }
 
             String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
-            String[] materialsArr = materials.toArray(new String[0]);
 
             stream.writeShort(metaDataNamesArr.length);
             for (String s : metaDataNamesArr) {
                 StreamHelper.writeStringToStream(stream, s);
             }
+            String[] materialsArr = materials.toArray(new String[0]);
 
             stream.writeShort(materialsArr.length);
             for (String localMaterialData : materialsArr) {
-                StreamHelper.writeStringToStream(stream, localMaterialData);
+                if (materialPalette == null) {
+                    StreamHelper.writeStringToStream(stream, localMaterialData);
+                } else {
+                    stream.writeShort(materialPalette.indexOrAdd(localMaterialData));
+                }
             }
 
             int bitsPerBlock = 32 - Integer.numberOfLeadingZeros(materialsArr.length);  // 32 - clz(n - 1)
@@ -180,7 +185,11 @@ public class BlockPacker {
 
             stream.writeInt(localMaterialPalette.size());
             for (LocalMaterialData m : localMaterialPalette) {
-                StreamHelper.writeStringToStream(stream, m.toString());
+                if (materialPalette == null) {
+                    StreamHelper.writeStringToStream(stream, m.toString());
+                } else {
+                    stream.writeShort(materialPalette.indexOrAdd(m));
+                }
             }
 
             stream.writeInt(metaDataPalette.size());

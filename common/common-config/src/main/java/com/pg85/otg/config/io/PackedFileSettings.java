@@ -40,7 +40,7 @@ public final class PackedFileSettings
         }
     }
 
-    public static void packToStream(SettingsMap settingsMap, DataOutput stream, ILogger logger, NameTable nameTable) throws IOException
+    public static void packToStream(SettingsMap settingsMap, DataOutput stream, ILogger logger, StringTable stringTable) throws IOException
     {
         stream.writeInt(version);
         stream.writeBoolean(false);
@@ -54,7 +54,7 @@ public final class PackedFileSettings
         stream.writeInt(settings.size());
         for (RawSettingValue entry : settings)
         {
-            packEntry(stream, entry, logger, nameTable);
+            packEntry(stream, entry, logger, stringTable);
         }
     }
 
@@ -85,7 +85,7 @@ public final class PackedFileSettings
         }
     }
 
-    private static void packEntry(DataOutput stream, RawSettingValue entry, ILogger logger, NameTable nameTable) throws IOException
+    private static void packEntry(DataOutput stream, RawSettingValue entry, ILogger logger, StringTable stringTable) throws IOException
     {
         switch (entry.getType())
         {
@@ -97,7 +97,7 @@ public final class PackedFileSettings
                     logger.log(LogLevel.WARN, LogCategory.CONFIGS, String.format("Invalid setting %s", entry.getRawValue()));
                     return;
                 }
-                int settingIndex = nameTable.getOrRegisterSettingId(parsed[0].trim());
+                int settingIndex = stringTable.getOrRegisterString(parsed[0].trim());
                 stream.writeShort(settingIndex);
                 stream.writeUTF(parsed[1].trim());
                 break;
@@ -112,7 +112,7 @@ public final class PackedFileSettings
                 }
                 String parameters = raw.substring(bracketIndex + 1, raw.length() - 1).trim();
                 List<String> args = Arrays.asList(StringHelper.readCommaSeperatedString(parameters));
-                int functionIndex = nameTable.getOrRegisterSettingId(functionName);
+                int functionIndex = stringTable.getOrRegisterString(functionName);
 
                 stream.writeByte(2);
                 stream.writeShort(functionIndex);
@@ -125,7 +125,7 @@ public final class PackedFileSettings
         }
     }
 
-    public static SettingsMap readFromStream(DataInputStream stream, ILogger logger, NameTable nameTable) throws IOException, InvalidConfigException {
+    public static SettingsMap readFromStream(DataInputStream stream, ILogger logger, StringTable stringTable) throws IOException, InvalidConfigException {
         int dataVersion = stream.readInt();
         if (dataVersion > version) {
             throw new InvalidConfigException(String.format("Settings version too new! Supports up to %d (found %d)", version, dataVersion));
@@ -138,17 +138,17 @@ public final class PackedFileSettings
             if (hasNames) {
                 readEntry(stream, map, logger);
             } else {
-                readEntry(stream, map, logger, nameTable);
+                readEntry(stream, map, logger, stringTable);
             }
         }
 
         return map;
     }
 
-    private static void readEntry(DataInputStream stream, SettingsMap map, ILogger logger, NameTable table) throws IOException {
+    private static void readEntry(DataInputStream stream, SettingsMap map, ILogger logger, StringTable table) throws IOException {
         switch (stream.readByte()) {
             case 1:  // plain setting
-                String name = table.getNameById(stream.readShort());
+                String name = table.getStringById(stream.readShort());
 //                short valueLen = stream.readShort();
 //                // FIXME: for some reason readUTF doesn't work here
 //                byte[] buf = new byte[valueLen];
@@ -158,7 +158,7 @@ public final class PackedFileSettings
                 map.addRawSetting(RawSettingValue.create(RawSettingValue.ValueType.PLAIN_SETTING, String.format("%s: %s", name, value)));
                 break;
             case 2:  // function
-                String funcName = table.getNameById(stream.readShort());
+                String funcName = table.getStringById(stream.readShort());
                 short numArgs = stream.readShort();
                 List<String> args = new ArrayList<>();
                 for (int i = 0; i < numArgs; i++) {

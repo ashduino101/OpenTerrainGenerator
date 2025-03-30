@@ -4,7 +4,7 @@ import com.pg85.otg.OTG;
 import com.pg85.otg.config.biome.BiomeConfig;
 import com.pg85.otg.config.io.PackedFileSettings;
 import com.pg85.otg.config.io.FileSettingsReader;
-import com.pg85.otg.config.io.NameTable;
+import com.pg85.otg.config.io.StringTable;
 import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.constants.Constants;
 import com.pg85.otg.constants.SettingsEnums;
@@ -21,6 +21,7 @@ import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
+import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.nbt.NamedBinaryTag;
 
 import java.io.*;
@@ -37,11 +38,11 @@ import java.util.*;
 public class PresetPacker
 {
     public PresetPacker() {
-//        LZMA2Options options = new LZMA2Options();
+
     }
 
     static final String magic = "OTG\n";
-    private static final int version = 1;
+    private static final int version = PackedPreset.version;
     public static void packToFile(PresetFolder preset, FileOutputStream file, ILogger logger) throws IOException {
         DataOutputStream stream = new DataOutputStream(file);
         FileChannel channel = file.getChannel();
@@ -50,7 +51,8 @@ public class PresetPacker
         stream.writeInt(version);
         stream.writeLong(0);  // Will be filled in later
 
-        NameTable nameTable = new NameTable();
+        StringTable nameTable = new StringTable();
+        MaterialPalette materialPalette = new MaterialPalette();
 
         Path presetDir = preset.getPresetFolder();
 
@@ -103,11 +105,11 @@ public class PresetPacker
                 if (object != null)  // Structure was in resource list but file could not be found.
                 {
                     if (object instanceof BO4) {
-                        packBO4((BO4) object, channel, stream, preset, biomeObjectOffsets, nbtFiles);
+                        packBO4((BO4) object, channel, stream, preset, biomeObjectOffsets, nbtFiles, materialPalette);
                     } else if (object instanceof BO3) {
-                        packBO3((BO3) object, channel, stream, preset, biomeObjectOffsets, nbtFiles);
+                        packBO3((BO3) object, channel, stream, preset, biomeObjectOffsets, nbtFiles, materialPalette);
                     } else if (object instanceof BO2) {
-                        packBO2((BO2) object, channel, stream, biomeObjectOffsets);
+                        packBO2((BO2) object, channel, stream, biomeObjectOffsets, materialPalette);
                     }
                 }
             }
@@ -151,8 +153,12 @@ public class PresetPacker
         stream.writeLong(metadataOffset);
         channel.position(metadataOffset);
 
-        // Name table
+        // String table
         nameTable.packToStream(stream);
+        stream.flush();
+
+        // Material palette
+        materialPalette.writeToStream(stream);
         stream.flush();
 
         // World config offset
@@ -194,7 +200,7 @@ public class PresetPacker
 //        }
 //    }
 
-    private static void packBO4(BO4 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, Map<String, NamedBinaryTag> nbtFiles) throws IOException {
+    private static void packBO4(BO4 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, Map<String, NamedBinaryTag> nbtFiles, MaterialPalette materialPalette) throws IOException {
         OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, object.getName());
 //        BO4NBTPacker bnp = new BO4NBTPacker(object);
 
@@ -205,7 +211,7 @@ public class PresetPacker
 
         stream.writeByte(4);
 
-        BO4Data.generateBO4DataToStream(object.getConfig(), true, dataOut, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), false);
+        BO4Data.generateBO4DataToStream(object.getConfig(), true, dataOut, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), false, materialPalette);
 
         offsets.put(object.getName(), offset);
 
@@ -229,11 +235,11 @@ public class PresetPacker
                     }
                     if (!offsets.containsKey(bo.getName())) {
                         if (bo instanceof BO4) {
-                            packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles);
+                            packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles, materialPalette);
                         } else if (bo instanceof BO3) {
-                            packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles);
+                            packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles, materialPalette);
                         } else if (bo instanceof BO2) {
-                            packBO2((BO2)bo, channel, stream, offsets);
+                            packBO2((BO2)bo, channel, stream, offsets, materialPalette);
                         }
                     }
                 }
@@ -243,7 +249,7 @@ public class PresetPacker
 //        OTG.getEngine().getCustomObjectManager().getGlobalObjects().unloadCustomObjectFiles();
     }
 
-    public static void packBO3(BO3 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, Map<String, NamedBinaryTag> nbtFiles) throws IOException {
+    public static void packBO3(BO3 object, FileChannel channel, DataOutputStream stream, PresetFolder preset, HashMap<String, Long> offsets, Map<String, NamedBinaryTag> nbtFiles, MaterialPalette materialPalette) throws IOException {
         OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, object.getName());
 
         ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
@@ -253,7 +259,7 @@ public class PresetPacker
 
         stream.writeByte(3);
 
-        object.getConfig().writeToStream(dataOut, true, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+        object.getConfig().writeToStream(dataOut, true, preset.getId(), OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(preset.getId()), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker(), materialPalette);
 
         offsets.put(object.getName(), offset);
 
@@ -277,11 +283,11 @@ public class PresetPacker
                     }
                     if (!offsets.containsKey(bo.getName())) {
                         if (bo instanceof BO4) {
-                            packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles);
+                            packBO4((BO4)bo, channel, stream, preset, offsets, nbtFiles, materialPalette);
                         } else if (bo instanceof BO3) {
-                            packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles);
+                            packBO3((BO3)bo, channel, stream, preset, offsets, nbtFiles, materialPalette);
                         } else if (bo instanceof BO2) {
-                            packBO2((BO2)bo, channel, stream, offsets);
+                            packBO2((BO2)bo, channel, stream, offsets, materialPalette);
                         }
                     }
                 }
@@ -289,7 +295,7 @@ public class PresetPacker
         }
     }
 
-    public static void packBO2(BO2 object, FileChannel channel, DataOutputStream stream, HashMap<String, Long> offsets) throws IOException {
+    public static void packBO2(BO2 object, FileChannel channel, DataOutputStream stream, HashMap<String, Long> offsets, MaterialPalette materialPalette) throws IOException {
         OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, object.getName());
 
         ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
@@ -299,7 +305,7 @@ public class PresetPacker
 
         stream.writeByte(2);
 
-        object.writeToStream(dataOut);
+        object.writeToStream(dataOut, materialPalette);
 
         offsets.put(object.getName(), offset);
 

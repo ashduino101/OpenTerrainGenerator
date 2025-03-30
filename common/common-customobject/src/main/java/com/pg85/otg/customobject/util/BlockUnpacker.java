@@ -10,6 +10,7 @@ import com.pg85.otg.util.helpers.StreamHelper;
 import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.LocalMaterialData;
+import com.pg85.otg.util.materials.MaterialPalette;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class BlockUnpacker {
 
     }
 
-    public List<BlockFunction<?>> unpackFromStream(DataInputStream stream, IBlockFunctionFactory nonRandomBlockFactory, IMaterialReader materialReader, ILogger logger) throws IOException, InvalidConfigException {
+    public List<BlockFunction<?>> unpackFromStream(DataInputStream stream, IBlockFunctionFactory nonRandomBlockFactory, IMaterialReader materialReader, ILogger logger, MaterialPalette materialPalette) throws IOException, InvalidConfigException {
         List<BlockFunction<?>> blocks = new ArrayList<>();
 
         // Nonrandom blocks
@@ -38,7 +39,12 @@ public class BlockUnpacker {
 
             LocalMaterialData[] materialsArr = new LocalMaterialData[stream.readShort()];
             for (int i = 0; i < materialsArr.length; i++) {
-                String materialName = StreamHelper.readStringFromStream(stream);
+                String materialName;
+                if (materialPalette == null) {
+                    materialName = StreamHelper.readStringFromStream(stream);
+                } else {
+                    materialName = materialPalette.getMaterial(stream.readUnsignedShort());
+                }
                 try {
                     materialsArr[i] = materialReader.readMaterial(materialName);
                 } catch (InvalidConfigException e) {
@@ -110,9 +116,13 @@ public class BlockUnpacker {
         boolean hasRandomBlocks = stream.readBoolean();
         if (hasRandomBlocks) {
             int materialPaletteSize = stream.readInt();
-            LocalMaterialData[] materialPalette = new LocalMaterialData[materialPaletteSize];
+            LocalMaterialData[] materials = new LocalMaterialData[materialPaletteSize];
             for (int i = 0; i < materialPaletteSize; i++) {
-                materialPalette[i] = materialReader.readMaterial(StreamHelper.readStringFromStream(stream));
+                if (materialPalette == null) {
+                    materials[i] = materialReader.readMaterial(StreamHelper.readStringFromStream(stream));
+                } else {
+                    materials[i] = materialReader.readMaterial(materialPalette.getMaterial(stream.readUnsignedShort()));
+                }
             }
 
             int metaDataPaletteSize = stream.readInt();
@@ -137,7 +147,7 @@ public class BlockUnpacker {
                     for (int j = 0; j < rbf.blockCount; j++) {
                         rbf.blockChances[j] = stream.readByte();
                         short blockIdx = stream.readShort();
-                        rbf.blocks[j] = blockIdx == 0 ? null : materialPalette[blockIdx - 1];
+                        rbf.blocks[j] = blockIdx == 0 ? null : materials[blockIdx - 1];
                         short metaDataIdx = stream.readShort();
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
                     }
@@ -156,7 +166,7 @@ public class BlockUnpacker {
                     for (int j = 0; j < rbf.blockCount; j++) {
                         rbf.blockChances[j] = stream.readByte();
                         short blockIdx = stream.readShort();
-                        rbf.blocks[j] = blockIdx == 0 ? null : materialPalette[blockIdx - 1];
+                        rbf.blocks[j] = blockIdx == 0 ? null : materials[blockIdx - 1];
                         short metaDataIdx = stream.readShort();
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
                     }

@@ -30,6 +30,7 @@ import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IModLoadedChecker;
 import com.pg85.otg.util.CompressionUtils;
+import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.nbt.NamedBinaryTag;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.helpers.StreamHelper;
@@ -293,7 +294,7 @@ public class BO4Config extends CustomObjectConfigFile
 		// it won't pick up smoothing area settings if it is also used in another structure.
 		if(this.heightMap == null)
 		{
-			if(this.isBO4Data && fromFile)
+			if(this.isBO4Data && fromFile && !this.loadedFromStream)
 			{
 				BO4Config bo4Config = null;
 				try
@@ -1376,12 +1377,14 @@ public class BO4Config extends CustomObjectConfigFile
 		return null;
 	}
 
-	private static final int bo4DataVersion = 5;
-	void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
+	private static final int bo4DataVersion = 6;
+	void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette) throws IOException
 	{		
 		stream.writeInt(bo4DataVersion);
 		// Version 5 added stripping
 		stream.writeBoolean(strip);
+		// Version 6 added paletted materials
+		stream.writeBoolean(materialPalette != null);
 		// Version 3 added fixedRotation
 		// Version 4 changed all enumerators to ordinals (instead of strings)
 		stream.writeByte(this.fixedRotation == null ? 0xff : this.fixedRotation.ordinal());
@@ -1461,7 +1464,7 @@ public class BO4Config extends CustomObjectConfigFile
 		BO4BlockFunction[] blocks = getBlocks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
 
 		BlockPacker packer = new BlockPacker(stream);
-		packer.packToStream(Arrays.asList(blocks));
+		packer.packToStream(Arrays.asList(blocks), materialPalette);
 	}
 
 	private BO4Config readFromBO4DataFile(boolean getBlocks, ILogger logger, IMaterialReader materialReader) throws InvalidConfigException
@@ -1480,7 +1483,7 @@ public class BO4Config extends CustomObjectConfigFile
 					byte[] decompressedBytes = CompressionUtils.decompress(compressedBytes);
 					stream = new DataInputStream(new ByteArrayInputStream(decompressedBytes));
 
-					this.readFromStream(getBlocks, stream, logger, materialReader);
+					this.readFromStream(getBlocks, stream, logger, materialReader, null);
 					return this;
 				} catch (DataFormatException e1) {
 					e1.printStackTrace();
@@ -1517,7 +1520,7 @@ public class BO4Config extends CustomObjectConfigFile
 		return this;
 	}
 
-	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader) throws IOException, InvalidConfigException {
+	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette) throws IOException, InvalidConfigException {
 		boolean inheritedBO3Loaded = true;
 		int version = stream.readInt();
 
@@ -1536,6 +1539,18 @@ public class BO4Config extends CustomObjectConfigFile
             stream.close();
             throw new InvalidConfigException("Could not read BO4Data file " + this.reader.getName() + ", it is outdated. Delete and re-export BO4Data files to fix this, or delete and reinstall your OTG preset.");
 		}
+
+		if (version >= 6) {
+			boolean useMaterialPalette = stream.readBoolean();
+			if (useMaterialPalette && materialPalette == null) {
+				throw new InvalidConfigException("BO4 requires material palette but none was provided!");
+			}
+			if (!useMaterialPalette) {
+				// make sure not to use the material palette
+				materialPalette = null;
+			}
+		}
+
 		// Version 3 added fixedRotation
 		if (version >= 3)
 		{
@@ -1857,7 +1872,7 @@ public class BO4Config extends CustomObjectConfigFile
 		// v4 uses BlockUnpacker (we get blocks regardless here)
 		if (version >= 4) {
 			BlockUnpacker unpacker = new BlockUnpacker();
-			newBlocks = unpacker.unpackFromStream(stream, BO4BlockFunction::new, materialReader, logger);
+			newBlocks = unpacker.unpackFromStream(stream, BO4BlockFunction::new, materialReader, logger, materialPalette);
 
 			columnSizes = new short[this.xSize][this.zSize];
 			for (BlockFunction<?> block : newBlocks) {

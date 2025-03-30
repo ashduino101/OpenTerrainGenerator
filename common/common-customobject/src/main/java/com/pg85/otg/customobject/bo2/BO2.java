@@ -35,6 +35,7 @@ import com.pg85.otg.util.biome.ReplaceBlockMatrix;
 import com.pg85.otg.util.bo3.Rotation;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.LocalMaterials;
+import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.materials.MaterialSet;
 
 /**
@@ -572,10 +573,11 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		return null;
 	}
 
-	private static final int bo2DataVersion = 1;
-	public void writeToStream(DataOutput stream) throws IOException
+	private static final int bo2DataVersion = 2;
+	public void writeToStream(DataOutput stream, MaterialPalette materialPalette) throws IOException
 	{
 		stream.writeShort(bo2DataVersion);
+		stream.writeBoolean(materialPalette != null);
 
 		this.spawnOnBlockType.writeToStream(stream);
 		this.collisionBlockType.writeToStream(stream);
@@ -599,14 +601,25 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		stream.writeInt(this.spawnElevationMax);
 
 		BlockPacker packer = new BlockPacker(stream);
-		packer.packToStream(Arrays.asList(this.data[0]));
+		packer.packToStream(Arrays.asList(this.data[0]), materialPalette);
 	}
 
-	public static BO2 readFromStream(DataInputStream stream, ILogger logger, IMaterialReader materialReader) throws Exception
+	public static BO2 readFromStream(DataInputStream stream, ILogger logger, IMaterialReader materialReader, MaterialPalette materialPalette) throws Exception
 	{
 		short version = stream.readShort();
 		if (version > bo2DataVersion) {
 			throw new InvalidConfigException("BO2 data version too new (" + version + ")! I only know up to " + bo2DataVersion);
+		}
+
+		if (version >= 2) {
+			boolean useMaterialPalette = stream.readBoolean();
+			if (useMaterialPalette && materialPalette == null) {
+				throw new InvalidConfigException("BO2 requires material palette but none was provided!");
+			}
+			if (!useMaterialPalette) {
+				// make sure not to use the material palette
+				materialPalette = null;
+			}
 		}
 
 		BO2 newConfig = new BO2(null);
@@ -636,7 +649,7 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 
 		BlockUnpacker unpacker = new BlockUnpacker();
 		newConfig.data = new ObjectCoordinate[4][];
-		List<BlockFunction<?>> coordinates = unpacker.unpackFromStream(stream, ObjectCoordinate::new, materialReader, logger);
+		List<BlockFunction<?>> coordinates = unpacker.unpackFromStream(stream, ObjectCoordinate::new, materialReader, logger, materialPalette);
 
 		newConfig.data[0] = new ObjectCoordinate[coordinates.size()];
 		newConfig.data[1] = new ObjectCoordinate[coordinates.size()];
