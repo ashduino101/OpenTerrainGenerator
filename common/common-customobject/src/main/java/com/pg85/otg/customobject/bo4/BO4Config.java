@@ -177,7 +177,9 @@ public class BO4Config extends CustomObjectConfigFile
 		
 	private boolean isCollidable = false;
 	boolean isBO4Data = false;
-		
+	private boolean loadedFromStream = false;
+	private String overrideName;
+
 	/**
 	 * Creates a BO4Config from a file.
 	 *
@@ -412,7 +414,7 @@ public class BO4Config extends CustomObjectConfigFile
 	
 	private BO4BlockFunction[] getBlocks(boolean fromFile, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker)
 	{
-		if(fromFile && this.isBO4Data)
+		if(fromFile && this.isBO4Data && !this.loadedFromStream)
 		{
 			BO4Config bo4Config = null;
 			try
@@ -1359,10 +1361,25 @@ public class BO4Config extends CustomObjectConfigFile
 		}
 	}
 
-	private int bo4DataVersion = 4;
+	public void overrideName(String name) {
+		this.overrideName = name;
+	}
+
+	@Override
+	public String getName() {
+		if (this.overrideName != null) {
+			return this.overrideName;
+		}
+		if (this.reader != null) {
+			return super.getName();
+		}
+		return null;
+	}
+
+	private static int bo4DataVersion = 4;
 	void writeToStream(DataOutput stream, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker) throws IOException
 	{		
-		stream.writeInt(this.bo4DataVersion);
+		stream.writeInt(bo4DataVersion);
 		// Version 3 added fixedRotation
 		// Version 4 changed all enumerators to ordinals (instead of strings)
 		stream.writeByte(this.fixedRotation == null ? 0xff : this.fixedRotation.ordinal());
@@ -1498,18 +1515,23 @@ public class BO4Config extends CustomObjectConfigFile
 
 	public BO4Config readFromStream(boolean getBlocks, DataInputStream stream, ILogger logger, IMaterialReader materialReader) throws IOException, InvalidConfigException {
 		boolean inheritedBO3Loaded = true;
-		int bo4DataVersion = stream.readInt();
+		int version = stream.readInt();
+
+		if (version > bo4DataVersion) {
+			throw new InvalidConfigException("BO4 data version too new (" + version + ")! I only know up to " + bo4DataVersion);
+		}
+
 		// Version 2 made breaking changes
-		if (bo4DataVersion < 2)
+		if (version < 2)
 		{
             stream.close();
             throw new InvalidConfigException("Could not read BO4Data file " + this.reader.getName() + ", it is outdated. Delete and re-export BO4Data files to fix this, or delete and reinstall your OTG preset.");
 		}
 		// Version 3 added fixedRotation
-		if (bo4DataVersion >= 3)
+		if (version >= 3)
 		{
 			// Version 4 changed enums to ordinals
-			if (bo4DataVersion < 4) {
+			if (version < 4) {
 				String rotationString = StreamHelper.readStringFromStream(stream);
 				this.fixedRotation = Rotation.getRotation(rotationString);
 			} else {
@@ -1533,14 +1555,14 @@ public class BO4Config extends CustomObjectConfigFile
 		String author = StreamHelper.readStringFromStream(stream);
 		String description = StreamHelper.readStringFromStream(stream);
 		ConfigMode settingsMode;
-		if (bo4DataVersion < 4) {
+		if (version < 4) {
 			settingsMode = ConfigMode.valueOf(StreamHelper.readStringFromStream(stream));
 		} else {
 			settingsMode = ConfigMode.values()[stream.readByte()];
 		}
 		int frequency = stream.readInt();
 		SpawnHeightEnum spawnHeight;
-		if (bo4DataVersion < 4) {
+		if (version < 4) {
 			spawnHeight = SpawnHeightEnum.valueOf(StreamHelper.readStringFromStream(stream));
 		} else {
 			spawnHeight = SpawnHeightEnum.values()[stream.readByte()];
@@ -1556,7 +1578,7 @@ public class BO4Config extends CustomObjectConfigFile
 
 		String inheritBO3 = StreamHelper.readStringFromStream(stream);
 		Rotation inheritBO3Rotation;
-		if (bo4DataVersion < 4) {
+		if (version < 4) {
 			inheritBO3Rotation = Rotation.valueOf(StreamHelper.readStringFromStream(stream));
 		} else {
 			inheritBO3Rotation = Rotation.getRotation(stream.readByte());
@@ -1704,7 +1726,7 @@ public class BO4Config extends CustomObjectConfigFile
 		}
 
 		// Legacy settings, hoping they were always 0 and noone actually used them :/.
-		if (bo4DataVersion < 4) {
+		if (version < 4) {
 			stream.readInt(); // Used to be particles
 			stream.readInt(); // Used to be spawners
 			stream.readInt(); // Used to be moddata
@@ -1722,7 +1744,7 @@ public class BO4Config extends CustomObjectConfigFile
 		this.maxZ = maxZ;
 
 		// Reconstruct blocks
-		if(getBlocks && bo4DataVersion < 4)  // v4 uses BlockUnpacker
+		if(getBlocks && version < 4)  // v4 uses BlockUnpacker
 		{
 			short metaDataNamesArrLength = stream.readShort();
 			String[] metaDataNames = new String[metaDataNamesArrLength];
@@ -1820,7 +1842,7 @@ public class BO4Config extends CustomObjectConfigFile
 			newBlocks.addAll(randomBlocks);
 		}
 		// v4 uses BlockUnpacker (we get blocks regardless here)
-		if (bo4DataVersion >= 4) {
+		if (version >= 4) {
 			BlockUnpacker unpacker = new BlockUnpacker();
 			newBlocks = unpacker.unpackFromStream(stream, BO4BlockFunction::new, materialReader, logger);
 
@@ -1890,6 +1912,8 @@ public class BO4Config extends CustomObjectConfigFile
 
 		this.branchesBO4 = branchesBO4;
 		this.entityDataBO4 = entityDataBO4;
+
+		this.loadedFromStream = true;
 
 		// Reconstruct blocks
 		if(getBlocks)

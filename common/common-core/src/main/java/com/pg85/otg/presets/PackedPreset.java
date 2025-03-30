@@ -126,11 +126,13 @@ public class PackedPreset implements IPreset
                 case 3:  // BO3
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("%s at %d", objectOffset.getKey(), objectOffset.getValue()));
                     BO3Config config3 = BO3Config.readFromStream(new DataInputStream(new ByteArrayInputStream(data)), presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
+                    config3.overrideName(objectOffset.getKey());
                     OTG.getEngine().getCustomObjectManager().registerGlobalObject(new BO3(objectOffset.getKey(), null, config3));
                     break;
                 case 4:  // BO4
                     BO4Config config4 = new BO4Config(null, false, presetShortName, OTG.getEngine().getOTGRootFolder(), OTG.getEngine().getLogger(), OTG.getEngine().getCustomObjectManager(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName), OTG.getEngine().getCustomObjectResourcesManager(), OTG.getEngine().getModLoadedChecker());
                     config4.readFromStream(true, new DataInputStream(new ByteArrayInputStream(data)), OTG.getEngine().getLogger(), OTG.getEngine().getPresetLoader().getMaterialReader(presetShortName));
+                    config4.overrideName(objectOffset.getKey());
                     OTG.getEngine().getCustomObjectManager().registerGlobalObject(new BO4(objectOffset.getKey(), null, config4));
                     break;
             }

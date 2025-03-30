@@ -104,6 +104,8 @@ public class BO3Config extends CustomObjectConfigFile
 
 	BO3EntityFunction[][] entityFunctions = new BO3EntityFunction[4][];
 
+	private String overrideName;
+
 	/*
 	 * Creates a BO3Config from a file.
 	 */
@@ -749,6 +751,21 @@ public class BO3Config extends CustomObjectConfigFile
 		BO3Check[] checks = Arrays.copyOf(this.bo3Checks[0], l+1);
 		checks[l] = new BlockCheck(0, -1, 0, spawnOnBlockType);
 		this.bo3Checks[0] = checks;
+	}
+
+	public void overrideName(String name) {
+		this.overrideName = name;
+	}
+
+	@Override
+	public String getName() {
+		if (this.overrideName != null) {
+			return this.overrideName;
+		}
+		if (this.reader != null) {
+			return super.getName();
+		}
+		return null;
 	}
 
 	private static final int bo3DataVersion = 3;
