@@ -412,7 +412,16 @@ public class CustomObjectCollection
 			// We can only do this with packed presets, unfortunately
 			if (preset.isPacked()) {
 				CustomObject obj = (CustomObject) preset.getCustomObject(name);
-				if (obj != null) return obj;
+				if (obj != null) {
+					// Cache it
+					HashMap<String, CustomObject> cache = this.objectsByNamePerPreset.get(presetFolderName);
+					if (cache == null) {
+						cache = new HashMap<>();
+						this.objectsByNamePerPreset.put(presetFolderName, cache);
+					}
+					cache.put(name.toLowerCase(), obj);
+					return obj;
+				}
 			}
 	
 			// Index GlobalObjects and preset's Objects directories

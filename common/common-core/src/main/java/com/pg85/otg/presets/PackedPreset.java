@@ -196,7 +196,6 @@ public class PackedPreset implements IPreset
 
     @Override
     public ICustomObject getCustomObject(String name) {
-//        OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.CUSTOM_OBJECTS, "Loading from pack: " + name);
         Long objectOffset = this.objectOffsets.get(name);
         if (objectOffset == null) return null;
         try {
