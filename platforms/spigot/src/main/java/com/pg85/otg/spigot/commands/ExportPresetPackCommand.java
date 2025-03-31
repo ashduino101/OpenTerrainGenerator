@@ -13,6 +13,7 @@ import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 
 import net.minecraft.server.v1_16_R3.WorldServer;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.entity.Player;
@@ -71,8 +72,15 @@ public class ExportPresetPackCommand extends BaseCommand
                 try (FileOutputStream file = new FileOutputStream(outputPath))
                 {
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("Packing preset to %s", outputPath));
-
-                    packer.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
+                    try {
+                        packer.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
+                    } catch (Exception e) {
+                        sender.sendMessage(ChatColor.RED + "Error packing preset: " + e);
+                        OTG.getEngine().getLogger().log(LogLevel.WARN, LogCategory.MAIN, "Preset export error:");
+                        e.printStackTrace();
+                        isRunning = false;
+                        return;
+                    }
 
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Preset export complete.");
                     sender.sendMessage("OTG preset export is done.");
