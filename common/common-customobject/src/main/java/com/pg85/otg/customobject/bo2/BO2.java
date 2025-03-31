@@ -501,7 +501,7 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		ArrayList<ObjectCoordinate> coordinates = new ArrayList<ObjectCoordinate>();
 		for (Entry<String, String> line : this.reader.getRawSettings())
 		{
-			ObjectCoordinate buffer = ObjectCoordinate.getCoordinateFromString(line.getKey(), line.getValue(), materialReader);
+			ObjectCoordinate buffer = ObjectCoordinate.getCoordinateFromString(line.getKey(), line.getValue(), materialReader, this);
 			if (buffer != null)
 			{
 				coordinates.add(buffer);

@@ -1,6 +1,7 @@
 package com.pg85.otg.customobject.bo2;
 
 import com.pg85.otg.customobject.bofunctions.BlockFunction;
+import com.pg85.otg.customobject.config.CustomObjectConfigFile;
 import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IWorldGenRegion;
@@ -54,6 +55,7 @@ class ObjectCoordinate extends BlockFunction<BO2>
 	{
 		ObjectCoordinate newCoordinate = new ObjectCoordinate(this.z, this.y, (this.x * -1));
 		newCoordinate.material = this.material.rotate();
+		newCoordinate.holder = this.holder;
 		newCoordinate.branchOdds = this.branchOdds;
 
 		if (this.branchDirection != -1)
@@ -68,7 +70,7 @@ class ObjectCoordinate extends BlockFunction<BO2>
 		return newCoordinate;
 	}
 
-	static ObjectCoordinate getCoordinateFromString(String key, String value, IMaterialReader materialReader)
+	static ObjectCoordinate getCoordinateFromString(String key, String value, IMaterialReader materialReader, BO2 holder)
 	{
 		String[] coordinates = key.split(",(?![^\\(\\[]*[\\]\\)])", 3); // Splits on any comma not inside brackets
 		if (coordinates.length != 3)
@@ -96,6 +98,7 @@ class ObjectCoordinate extends BlockFunction<BO2>
 				newCoordinate.branchOdds = Integer.parseInt(branchData[1]);
 			}
 			newCoordinate.material = materialReader.readMaterial(workingDataString);
+			newCoordinate.holder = holder;
 
 			return newCoordinate;
 		}
