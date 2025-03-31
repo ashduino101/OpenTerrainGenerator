@@ -1,11 +1,6 @@
 package com.pg85.otg.spigot.commands;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.pg85.otg.interfaces.IPreset;
@@ -48,8 +43,6 @@ public class SpawnCommand extends BaseCommand
 
 	public boolean execute(CommandSender sender, String[] args)
 	{
-		Map<String, String> strings = CommandUtil.parseArgs(args, false);
-		
 		if (!(sender instanceof Player))
 		{
 			sender.sendMessage("Only players can execute this command");
@@ -57,12 +50,14 @@ public class SpawnCommand extends BaseCommand
 		}
 		Player player = (Player) sender;
 
-		String presetName = strings.get("1");
-		String objectName = strings.get("2");
+		List<String> argsList = Arrays.asList(args);
+
+		String presetName = argsList.get(0);
+		String objectName = argsList.get(1);
 		boolean force = false;
-		if(strings.containsKey("3"))
+		if(argsList.size() > 2)
 		{
-			force = Boolean.getBoolean(strings.get("3"));
+			force = Boolean.getBoolean(argsList.get(2));
 		}
 		if (presetName == null || objectName == null)
 		{

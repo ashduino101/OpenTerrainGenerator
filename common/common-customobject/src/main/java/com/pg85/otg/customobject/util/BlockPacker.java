@@ -55,7 +55,7 @@ public class BlockPacker {
                     }
                     String path = baseDir + File.separator + block.nbtName;
                     Path p = Paths.get(path);
-                    String abs = p.toFile().getCanonicalPath();
+                    String abs = p.toAbsolutePath().normalize().toString();
                     relToAbsNBTPath.put(block.nbtName, abs);
 
                     if (metadataPalette != null) metadataPalette.getOrRegisterNBT(abs, block.nbt);
