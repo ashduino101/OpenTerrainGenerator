@@ -64,7 +64,14 @@ public class ExportPresetPackCommand extends BaseCommand
                 {
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, String.format("Packing preset to %s", outputPath));
 
-                    packer.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
+                    try {
+                        packer.packToFile((PresetFolder) preset, file, OTG.getEngine().getLogger());
+                    } catch (Exception e) {
+                        source.sendFailure(new StringTextComponent("Failed to pack preset! Check logs for details."));
+                        e.printStackTrace();
+                        isRunning = false;
+                        return;
+                    }
 
                     OTG.getEngine().getLogger().log(LogLevel.INFO, LogCategory.MAIN, "Preset export complete.");
                     source.sendSuccess(new StringTextComponent("OTG preset export is done."), false);
