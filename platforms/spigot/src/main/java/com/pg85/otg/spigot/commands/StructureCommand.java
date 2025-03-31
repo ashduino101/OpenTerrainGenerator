@@ -25,7 +25,7 @@ public class StructureCommand extends BaseCommand
 {
 	public StructureCommand() {
 		super("structure");
-		this.helpMessage = "Displays information about BO4 structures in your current chunk.";
+		this.helpMessage = "Displays information about BO3/BO4 structures in your current chunk.";
 		this.usage = "/otg structure";
 	}
 	
@@ -63,7 +63,9 @@ public class StructureCommand extends BaseCommand
 			} else {
 				structureInfo += "-- BO3 Info -- \nName: " + ((BO3)worldInfoChunk.start.getObject(otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker)).getConfig().getName().replace("Start", "") + "\nAuthor: " + ((BO3)worldInfoChunk.start.getObject(otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker)).getConfig().author + "\nDescription: " + ((BO3)worldInfoChunk.start.getObject(otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker)).getConfig().description;
 			}
-		}		
+		} else {
+			structureInfo += "No BO3/BO4 structures found in your current chunk.";
+		}
 	
 		sender.sendMessage(structureInfo);
 		return true;

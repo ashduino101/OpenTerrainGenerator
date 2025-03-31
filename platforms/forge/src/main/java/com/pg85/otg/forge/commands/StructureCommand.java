@@ -70,8 +70,10 @@ public class StructureCommand extends BaseCommand
 			} else {
 				structureInfo += "-- BO3 Info -- \r\nName: " + ((BO3)worldInfoChunk.start.getObject(otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker)).getConfig().getName().replace("Start", "") + "\r\nAuthor: " + ((BO3)worldInfoChunk.start.getObject(otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker)).getConfig().author + "\r\nDescription: " + ((BO3)worldInfoChunk.start.getObject(otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker)).getConfig().description;
 			}
+		} else {
+			structureInfo += "No custom structures found in your current chunk.";
 		}
-		
+
 		source.sendSuccess(new StringTextComponent(structureInfo), false);
 		return 0;
 	}
