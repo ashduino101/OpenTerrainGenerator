@@ -66,22 +66,22 @@ public class BlockPacker {
             String[] metaDataNamesArr = metaDataNames.toArray(new String[0]);
 
             // metadataNames should be empty if blocks is empty
-            stream.writeShort(metaDataNamesArr.length);
+            StreamHelper.writeVarIntToStream(stream, metaDataNamesArr.length);
             for (String s : metaDataNamesArr) {
                 if (metadataPalette == null) {
                     StreamHelper.writeStringToStream(stream, s);
                 } else {
-                    stream.writeShort(metadataPalette.get(relToAbsNBTPath.get(s)));
+                    StreamHelper.writeVarIntToStream(stream, metadataPalette.get(relToAbsNBTPath.get(s)));
                 }
             }
             String[] materialsArr = materials.toArray(new String[0]);
 
-            stream.writeShort(materialsArr.length);
+            StreamHelper.writeVarIntToStream(stream, materialsArr.length);
             for (String localMaterialData : materialsArr) {
                 if (materialPalette == null) {
                     StreamHelper.writeStringToStream(stream, localMaterialData);
                 } else {
-                    stream.writeShort(materialPalette.indexOrAdd(localMaterialData));
+                    StreamHelper.writeVarIntToStream(stream, materialPalette.indexOrAddMaterial(localMaterialData));
                 }
             }
 
@@ -122,12 +122,12 @@ public class BlockPacker {
             maxY += 1;
             maxZ += 1;
 
-            stream.writeShort(minX);
-            stream.writeShort(maxX);
-            stream.writeShort(minY);
-            stream.writeShort(maxY);
-            stream.writeShort(minZ);
-            stream.writeShort(maxZ);
+            StreamHelper.writeVarIntToStream(stream, minX);
+            StreamHelper.writeVarIntToStream(stream, maxX);
+            StreamHelper.writeVarIntToStream(stream, minY);
+            StreamHelper.writeVarIntToStream(stream, maxY);
+            StreamHelper.writeVarIntToStream(stream, minZ);
+            StreamHelper.writeVarIntToStream(stream, maxZ);
 
             // Convert the blocks to a 1-dimensional array
             int sizeX = maxX - minX;
@@ -135,7 +135,7 @@ public class BlockPacker {
             int sizeZ = maxZ - minZ;
             List<BlockFunction<?>> blocksFlat = Arrays.asList(new BlockFunction<?>[sizeX * sizeY * sizeZ]);
 
-            stream.writeInt(blocksFlat.size());
+            StreamHelper.writeVarIntToStream(stream, blocksFlat.size());
             stream.writeByte(bitsPerBlock);
 
             for (BlockFunction<?> block : nonRandomBlocks) {
@@ -175,13 +175,13 @@ public class BlockPacker {
                 stream.writeLong(currentLong);
             }
 
-            stream.writeInt(blockNbt.size());
+            StreamHelper.writeVarIntToStream(stream, blockNbt.size());
             for (Map.Entry<int[], Integer> nbt : blockNbt.entrySet()) {
                 int[] pos = nbt.getKey();
-                stream.writeShort(pos[0]);
-                stream.writeShort(pos[1]);
-                stream.writeShort(pos[2]);
-                stream.writeShort(nbt.getValue());
+                StreamHelper.writeVarIntToStream(stream, pos[0]);
+                StreamHelper.writeVarIntToStream(stream, pos[1]);
+                StreamHelper.writeVarIntToStream(stream, pos[2]);
+                StreamHelper.writeVarIntToStream(stream, nbt.getValue());
             }
         }
 
@@ -210,16 +210,16 @@ public class BlockPacker {
                 }
             }
 
-            stream.writeInt(localMaterialPalette.size());
+            StreamHelper.writeVarIntToStream(stream, localMaterialPalette.size());
             for (LocalMaterialData m : localMaterialPalette) {
                 if (materialPalette == null) {
                     StreamHelper.writeStringToStream(stream, m.toString());
                 } else {
-                    stream.writeShort(materialPalette.indexOrAdd(m));
+                    StreamHelper.writeVarIntToStream(stream, materialPalette.indexOrAddMaterial(m));
                 }
             }
 
-            stream.writeInt(localMetaDataPalette.size());
+            StreamHelper.writeVarIntToStream(stream, localMetaDataPalette.size());
             for (Pair<String, NamedBinaryTag> m : localMetaDataPalette) {
                 if (metadataPalette == null) {
                     StreamHelper.writeStringToStream(stream, m.getFirst());
@@ -228,14 +228,14 @@ public class BlockPacker {
                     Path p = Paths.get(path);
                     String abs = p.toFile().getCanonicalPath();
 
-                    stream.writeShort(metadataPalette.getOrRegisterNBT(abs, m.getSecond()));
+                    StreamHelper.writeVarIntToStream(stream, metadataPalette.getOrRegisterNBT(abs, m.getSecond()));
                 }
             }
 
             List<LocalMaterialData> indexableMaterials = new ArrayList<>(localMaterialPalette);
             List<String> indexableMetaData = localMetaDataPalette.stream().map(Pair::getFirst).collect(Collectors.toList());
 
-            stream.writeInt(randomBlocks.size());
+            StreamHelper.writeVarIntToStream(stream, randomBlocks.size());
             byte type = 0;
             for (BlockFunction<?> block : randomBlocks) {
                 if (block instanceof BO3RandomBlockFunction) {
@@ -249,7 +249,7 @@ public class BlockPacker {
                     }
                     BO3RandomBlockFunction rbf = (BO3RandomBlockFunction) block;
                     stream.writeByte(rbf.x);
-                    stream.writeShort(rbf.y);
+                    StreamHelper.writeVarIntToStream(stream, rbf.y);
                     stream.writeByte(rbf.z);
 
                     stream.writeByte(rbf.blocks.length);
@@ -259,8 +259,8 @@ public class BlockPacker {
                         String metadataName = rbf.metaDataNames[i];
 
                         stream.writeByte(blockChance);
-                        stream.writeShort(blockMaterial == null ? 0 : indexableMaterials.indexOf(blockMaterial) + 1);
-                        stream.writeShort(metadataName == null ? 0 : indexableMetaData.indexOf(metadataName) + 1);
+                        StreamHelper.writeVarIntToStream(stream, blockMaterial == null ? 0 : indexableMaterials.indexOf(blockMaterial) + 1);
+                        StreamHelper.writeVarIntToStream(stream, metadataName == null ? 0 : indexableMetaData.indexOf(metadataName) + 1);
                     }
                 } else if (block instanceof BO4RandomBlockFunction) {
                     if (type == 0) {
@@ -272,7 +272,7 @@ public class BlockPacker {
                     }
                     BO4RandomBlockFunction rbf = (BO4RandomBlockFunction) block;
                     stream.writeByte(rbf.x);
-                    stream.writeShort(rbf.y);
+                    StreamHelper.writeVarIntToStream(stream, rbf.y);
                     stream.writeByte(rbf.z);
 
                     stream.writeByte(rbf.blocks.length);
@@ -282,8 +282,8 @@ public class BlockPacker {
                         String metadataName = rbf.metaDataNames[i];
 
                         stream.writeByte(blockChance);
-                        stream.writeShort(blockMaterial == null ? 0 : indexableMaterials.indexOf(blockMaterial) + 1);
-                        stream.writeShort(metadataName == null ? 0 : indexableMetaData.indexOf(metadataName) + 1);
+                        StreamHelper.writeVarIntToStream(stream, blockMaterial == null ? 0 : indexableMaterials.indexOf(blockMaterial) + 1);
+                        StreamHelper.writeVarIntToStream(stream, metadataName == null ? 0 : indexableMetaData.indexOf(metadataName) + 1);
                     }
                 }
             }

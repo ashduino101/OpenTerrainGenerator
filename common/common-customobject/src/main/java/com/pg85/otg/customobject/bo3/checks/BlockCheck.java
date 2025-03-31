@@ -6,6 +6,7 @@ import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.ILogger;
 import com.pg85.otg.interfaces.IMaterialReader;
 import com.pg85.otg.interfaces.IWorldGenRegion;
+import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.materials.MaterialSet;
 
 import java.io.DataInput;
@@ -65,16 +66,16 @@ public class BlockCheck extends BO3Check
 	/**
 	 * Writes the inner material list to a stream.
 	 */
-	public void writeMaterialsToStream(DataOutput stream) throws IOException {
-		this.toCheck.writeToStream(stream);
+	public void writeMaterialsToStream(DataOutput stream, MaterialPalette materialPalette) throws IOException {
+		this.toCheck.writeToStream(stream, materialPalette);
 	}
 
 	/**
 	 * Reads the inner material list from a stream.
 	 */
-	public void readMaterialsFromStream(DataInput stream, IMaterialReader materialReader) throws IOException, InvalidConfigException {
+	public void readMaterialsFromStream(DataInput stream, IMaterialReader materialReader, MaterialPalette materialPalette) throws IOException, InvalidConfigException {
 		this.toCheck = new MaterialSet();
-		this.toCheck.parseAndAddFromStream(stream, materialReader);
+		this.toCheck.parseAndAddFromStream(stream, materialReader, materialPalette);
 	}
 
 	@Override

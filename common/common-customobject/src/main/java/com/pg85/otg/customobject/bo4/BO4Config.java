@@ -1388,26 +1388,26 @@ public class BO4Config extends CustomObjectConfigFile
 		// Version 3 added fixedRotation
 		// Version 4 changed all enumerators to ordinals (instead of strings)
 		stream.writeByte(this.fixedRotation == null ? 0xff : this.fixedRotation.ordinal());
-		stream.writeInt(this.minimumSizeTop);
-		stream.writeInt(this.minimumSizeBottom);
-		stream.writeInt(this.minimumSizeLeft);
-		stream.writeInt(this.minimumSizeRight);
-		stream.writeInt(this.minX);
-		stream.writeInt(this.maxX);
-		stream.writeInt(this.minY);
-		stream.writeInt(this.maxY);
-		stream.writeInt(this.minZ);
-		stream.writeInt(this.maxZ);
+		StreamHelper.writeVarIntToStream(stream, this.minimumSizeTop);
+		StreamHelper.writeVarIntToStream(stream, this.minimumSizeBottom);
+		StreamHelper.writeVarIntToStream(stream, this.minimumSizeLeft);
+		StreamHelper.writeVarIntToStream(stream, this.minimumSizeRight);
+		StreamHelper.writeVarIntToStream(stream, this.minX);
+		StreamHelper.writeVarIntToStream(stream, this.maxX);
+		StreamHelper.writeVarIntToStream(stream, this.minY);
+		StreamHelper.writeVarIntToStream(stream, this.maxY);
+		StreamHelper.writeVarIntToStream(stream, this.minZ);
+		StreamHelper.writeVarIntToStream(stream, this.maxZ);
 		if (!strip) {
 			StreamHelper.writeStringToStream(stream, this.author);
 			StreamHelper.writeStringToStream(stream, this.description);
 		}
 		stream.writeByte(this.settingsMode.ordinal());
-		stream.writeInt(this.frequency);
+		StreamHelper.writeVarIntToStream(stream, this.frequency);
 		stream.writeByte(this.spawnHeight.ordinal());
-		stream.writeInt(this.minHeight);
-		stream.writeInt(this.maxHeight);
-		stream.writeShort(this.inheritedBO3s.size());
+		StreamHelper.writeVarIntToStream(stream, this.minHeight);
+		StreamHelper.writeVarIntToStream(stream, this.maxHeight);
+		StreamHelper.writeVarIntToStream(stream, this.inheritedBO3s.size());
 		for(String inheritedBO3 : this.inheritedBO3s) {
 			StreamHelper.writeStringToStream(stream, inheritedBO3);
 		}
@@ -1416,7 +1416,7 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeBoolean(this.overrideChildSettings);
 		stream.writeBoolean(this.overrideParentHeight);
 		stream.writeBoolean(this.canOverride);
-		stream.writeInt(this.branchFrequency);
+		StreamHelper.writeVarIntToStream(stream, this.branchFrequency);
 		StreamHelper.writeStringToStream(stream, this.branchFrequencyGroup);
 		stream.writeBoolean(this.mustBeBelowOther);
 		stream.writeBoolean(this.mustBeInsideWorldBorders);
@@ -1428,7 +1428,7 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeBoolean(this.spawnUnderWater);
 		stream.writeBoolean(this.spawnAtWaterLevel);
 		stream.writeBoolean(this.doReplaceBlocks);
-		stream.writeInt(this.heightOffset);
+		StreamHelper.writeVarIntToStream(stream, this.heightOffset);
 		stream.writeBoolean(this.removeAir);
 		StreamHelper.writeStringToStream(stream, this.replaceAbove);
 		StreamHelper.writeStringToStream(stream, this.replaceBelow);
@@ -1436,8 +1436,8 @@ public class BO4Config extends CustomObjectConfigFile
 		StreamHelper.writeStringToStream(stream, this.replaceWithSurfaceBlock);
 		StreamHelper.writeStringToStream(stream, this.replaceWithGroundBlock);
 		StreamHelper.writeStringToStream(stream, this.replaceWithStoneBlock);
-		stream.writeInt(this.smoothRadius);
-		stream.writeInt(this.smoothHeightOffset);
+		StreamHelper.writeVarIntToStream(stream, this.smoothRadius);
+		StreamHelper.writeVarIntToStream(stream, this.smoothHeightOffset);
 		stream.writeBoolean(this.smoothStartTop);
 		stream.writeBoolean(this.smoothStartWood);
 		StreamHelper.writeStringToStream(stream, this.smoothingSurfaceBlock);
@@ -1447,15 +1447,15 @@ public class BO4Config extends CustomObjectConfigFile
 		stream.writeBoolean(this.isCollidable);
 		stream.writeBoolean(this.useCenterForHighestBlock);
 
-		stream.writeInt(this.branchesBO4.length);
+		StreamHelper.writeVarIntToStream(stream, this.branchesBO4.length);
 		for(BO4BranchFunction func : this.branchesBO4)
 		{
             // false For BO4BranchFunction, true for BO4WeightedBranchFunction
             stream.writeBoolean(func instanceof BO4WeightedBranchFunction); // false For BO4BranchFunction, true for BO4WeightedBranchFunction
 			func.writeToStream(stream);
 		}
-		
-		stream.writeInt(this.entityDataBO4.length);
+
+		StreamHelper.writeVarIntToStream(stream, this.entityDataBO4.length);
 		for(BO4EntityFunction func : this.entityDataBO4)
 		{
 			func.writeToStream(stream);
@@ -1533,6 +1533,9 @@ public class BO4Config extends CustomObjectConfigFile
 			isStripped = stream.readBoolean();
 		}
 
+		// Version 6 changed lots of int fields to use varints
+		boolean useVarInts = version >= 6;
+
 		// Version 2 made breaking changes
 		if (version < 2)
 		{
@@ -1565,17 +1568,17 @@ public class BO4Config extends CustomObjectConfigFile
 			}
 		}
 
-		int minimumSizeTop = stream.readInt();
-		int minimumSizeBottom = stream.readInt();
-		int minimumSizeLeft = stream.readInt();
-		int minimumSizeRight = stream.readInt();
+		int minimumSizeTop = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int minimumSizeBottom = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int minimumSizeLeft = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int minimumSizeRight = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 
-		int minX = stream.readInt();
-		int maxX = stream.readInt();
-		int minY = stream.readInt();
-		int maxY = stream.readInt();
-		int minZ = stream.readInt();
-		int maxZ = stream.readInt();
+		int minX = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int maxX = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int minY = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int maxY = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int minZ = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int maxZ = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 
 		String author = "Unknown";
 		String description = "Unknown";
@@ -1589,16 +1592,16 @@ public class BO4Config extends CustomObjectConfigFile
 		} else {
 			settingsMode = ConfigMode.values()[stream.readByte()];
 		}
-		int frequency = stream.readInt();
+		int frequency = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 		SpawnHeightEnum spawnHeight;
 		if (version < 4) {
 			spawnHeight = SpawnHeightEnum.valueOf(StreamHelper.readStringFromStream(stream));
 		} else {
 			spawnHeight = SpawnHeightEnum.values()[stream.readByte()];
 		}
-		int minHeight = stream.readInt();
-		int maxHeight = stream.readInt();
-		short inheritedBO3sSize = stream.readShort();
+		int minHeight = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int maxHeight = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int inheritedBO3sSize = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readShort();
 		ArrayList<String> inheritedBO3s = new ArrayList<String>();
 		for(int i = 0; i < inheritedBO3sSize; i++)
 		{
@@ -1615,7 +1618,7 @@ public class BO4Config extends CustomObjectConfigFile
 		boolean overrideChildSettings = stream.readByte() != 0;
 		boolean overrideParentHeight = stream.readByte() != 0;
 		boolean canOverride = stream.readByte() != 0;
-		int branchFrequency = stream.readInt();
+		int branchFrequency = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 		String branchFrequencyGroup = StreamHelper.readStringFromStream(stream);
 		boolean mustBeBelowOther = stream.readByte() != 0;
 		boolean mustBeInsideWorldBorders = stream.readByte() != 0;
@@ -1627,7 +1630,7 @@ public class BO4Config extends CustomObjectConfigFile
 		boolean spawnUnderWater = stream.readByte() != 0;
 		boolean spawnAtWaterLevel = stream.readByte() != 0;
 		boolean doReplaceBlocks = stream.readByte() != 0;
-		int heightOffset = stream.readInt();
+		int heightOffset = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 		boolean removeAir = stream.readByte() != 0;
 		String replaceAbove = StreamHelper.readStringFromStream(stream);
 		String replaceBelow = StreamHelper.readStringFromStream(stream);
@@ -1635,8 +1638,8 @@ public class BO4Config extends CustomObjectConfigFile
 		String replaceWithSurfaceBlock = StreamHelper.readStringFromStream(stream);
 		String replaceWithGroundBlock = StreamHelper.readStringFromStream(stream);
 		String replaceWithStoneBlock = StreamHelper.readStringFromStream(stream);
-		int smoothRadius = stream.readInt();
-		int smoothHeightOffset = stream.readInt();
+		int smoothRadius = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
+		int smoothHeightOffset = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 		boolean smoothStartTop = stream.readByte() != 0;
 		boolean smoothStartWood = stream.readByte() != 0;
 		String smoothingSurfaceBlock = StreamHelper.readStringFromStream(stream);
@@ -1731,7 +1734,7 @@ public class BO4Config extends CustomObjectConfigFile
 			}
 		}
 
-		int branchesOTGPlusLength = stream.readInt();
+		int branchesOTGPlusLength = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 		boolean branchType;
 		BO4BranchFunction branch;
 		BO4BranchFunction[] branchesBO4 = new BO4BranchFunction[branchesOTGPlusLength];
@@ -1747,7 +1750,7 @@ public class BO4Config extends CustomObjectConfigFile
 			branchesBO4[i] = branch;
 		}
 
-		int entityDataOTGPlusLength = stream.readInt();
+		int entityDataOTGPlusLength = useVarInts ? StreamHelper.readVarIntFromStream(stream) : stream.readInt();
 		BO4EntityFunction[] entityDataBO4 = new BO4EntityFunction[entityDataOTGPlusLength];
 		for(int i = 0; i < entityDataOTGPlusLength; i++)
 		{
@@ -1773,7 +1776,7 @@ public class BO4Config extends CustomObjectConfigFile
 		this.maxZ = maxZ;
 
 		// Reconstruct blocks
-		if(getBlocks && version < 4)  // v4 uses BlockUnpacker
+		if(getBlocks && version < 4)  // <v4 uses a less compact format
 		{
 			short metaDataNamesArrLength = stream.readShort();
 			String[] metaDataNames = new String[metaDataNamesArrLength];

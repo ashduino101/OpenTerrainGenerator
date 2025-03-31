@@ -1,9 +1,6 @@
 package com.pg85.otg.util.helpers;
 
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.EOFException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -61,5 +58,38 @@ public class StreamHelper
 		} else {
 			return "";
 		}
+	}
+
+	// Based on https://minecraft.wiki/w/Java_Edition_protocol#VarInt_and_VarLong
+	// Implements ZigZag coding as described in https://gist.github.com/mfuerstenau/ba870a29e16536fdbaba
+	/// Reads a signed ZigZag-encoded VarInt from the stream.
+	public static int readVarIntFromStream(DataInput stream) throws IOException {
+		int value = 0;
+		int position = 0;
+		byte currentByte;
+
+		while (true) {
+			currentByte = stream.readByte();
+			value |= (currentByte & 0x7f) << position;
+
+			if ((currentByte & 0x80) == 0) break;
+
+			position += 7;
+
+			if (position >= 32) throw new RuntimeException("VarInt is too big");
+		}
+
+		return (value >>> 1) ^ -(value & 1);
+	}
+
+	/// Writes a signed ZigZag-encoded VarInt to the stream.
+	public static void writeVarIntToStream(DataOutput stream, int value) throws IOException {
+		value = (value << 1) ^ (value >> 31);
+		int continuationBytes = (31 - Integer.numberOfLeadingZeros(value)) / 7;
+		for (int i = 0; i < continuationBytes; ++i) {
+			stream.writeByte(((byte) ((value & 0x7F) | 0x80)));
+			value >>>= 7;
+		}
+		stream.writeByte((byte) value);
 	}
 }

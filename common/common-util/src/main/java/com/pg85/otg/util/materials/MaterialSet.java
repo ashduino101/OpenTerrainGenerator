@@ -3,13 +3,13 @@ package com.pg85.otg.util.materials;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.pg85.otg.exceptions.InvalidConfigException;
 import com.pg85.otg.interfaces.IMaterialReader;
+import com.pg85.otg.util.helpers.StreamHelper;
 import com.pg85.otg.util.helpers.StringHelper;
 
 /**
@@ -239,26 +239,41 @@ public class MaterialSet
 	/**
 	 * Writes the material set to a stream.
 	 */
-	public void writeToStream(DataOutput stream) throws IOException {
+	public void writeToStream(DataOutput stream, MaterialPalette materialPalette) throws IOException {
 		byte flags = 0;
 		flags |= (byte) (this.allMaterials ? 1 : 0);
 		flags |= (byte) (this.allSolidMaterials ? 2 : 0);
 		flags |= (byte) (this.allNonSolidMaterials ? 4 : 0);
 		stream.writeByte(flags);
+
 		if (this.allMaterials) {
 			return;
 		}
-		stream.writeShort(this.tags.size());
-		for (MaterialSetEntry tag : this.tags) {
-			stream.writeUTF(tag.toString());
+
+		StreamHelper.writeVarIntToStream(stream, this.tags.size());
+		if (materialPalette == null) {
+			for (MaterialSetEntry tag : this.tags) {
+				stream.writeUTF(tag.toString());
+			}
+		} else {
+			for (MaterialSetEntry tag : this.tags) {
+				StreamHelper.writeVarIntToStream(stream, materialPalette.indexOrAddTag(tag.toString()));
+			}
 		}
-		stream.writeShort(this.materials.size());
-		for (MaterialSetEntry material : this.materials) {
-			stream.writeUTF(material.toString());
+
+		StreamHelper.writeVarIntToStream(stream, this.materials.size());
+		if (materialPalette == null) {
+			for (MaterialSetEntry material : this.materials) {
+				stream.writeUTF(material.toString());
+			}
+		} else {
+			for (MaterialSetEntry material : this.materials) {
+				StreamHelper.writeVarIntToStream(stream, materialPalette.indexOrAddMaterial(material.toString()));
+			}
 		}
 	}
 
-	public void parseAndAddFromStream(DataInput stream, IMaterialReader materialReader) throws IOException, InvalidConfigException {
+	public void parseAndAddFromStream(DataInput stream, IMaterialReader materialReader, MaterialPalette materialPalette) throws IOException, InvalidConfigException {
 		byte flags = stream.readByte();
 		if ((flags & 1) != 0) {
 			this.allMaterials = true;
@@ -270,17 +285,35 @@ public class MaterialSet
 		if ((flags & 4) != 0) {
 			this.allNonSolidMaterials = true;
 		}
-		short numTags = stream.readShort();
-		for (int i = 0; i < numTags; i++) {
-			String tagName = stream.readUTF();
-			LocalMaterialTag tag = materialReader.readTag(tagName);
-			this.addTag(new MaterialSetEntry(tag));
+
+		int numTags = StreamHelper.readVarIntFromStream(stream);
+		if (materialPalette == null) {
+			for (int i = 0; i < numTags; i++) {
+				String tagName = stream.readUTF();
+				LocalMaterialTag tag = materialReader.readTag(tagName);
+				this.addTag(new MaterialSetEntry(tag));
+			}
+		} else {
+			for (int i = 0; i < numTags; i++) {
+				String tagName = materialPalette.getTag(StreamHelper.readVarIntFromStream(stream));
+				LocalMaterialTag tag = materialReader.readTag(tagName);
+				this.addTag(new MaterialSetEntry(tag));
+			}
 		}
-		short numMaterials = stream.readShort();
-		for (int i = 0; i < numMaterials; i++) {
-			String materialName = stream.readUTF();
-			LocalMaterialData material = materialReader.readMaterial(materialName);
-			this.addMaterial(new MaterialSetEntry(material));
+
+		int numMaterials = StreamHelper.readVarIntFromStream(stream);
+		if (materialPalette == null) {
+			for (int i = 0; i < numMaterials; i++) {
+				String materialName = stream.readUTF();
+				LocalMaterialData material = materialReader.readMaterial(materialName);
+				this.addMaterial(new MaterialSetEntry(material));
+			}
+		} else {
+			for (int i = 0; i < numMaterials; i++) {
+				String materialName = materialPalette.getMaterial(StreamHelper.readVarIntFromStream(stream));
+				LocalMaterialData material = materialReader.readMaterial(materialName);
+				this.addMaterial(new MaterialSetEntry(material));
+			}
 		}
 	}
 

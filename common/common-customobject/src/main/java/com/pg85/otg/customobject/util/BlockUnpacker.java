@@ -34,22 +34,22 @@ public class BlockUnpacker {
         // Nonrandom blocks
         boolean hasNonRandomBlocks = stream.readBoolean();
         if (hasNonRandomBlocks) {
-            String[] metaDataNamesArr = new String[stream.readShort()];
+            String[] metaDataNamesArr = new String[StreamHelper.readVarIntFromStream(stream)];
             for (int i = 0; i < metaDataNamesArr.length; i++) {
                 if (nbtPalette == null) {
                     metaDataNamesArr[i] = StreamHelper.readStringFromStream(stream);
                 } else {
-                    metaDataNamesArr[i] = nbtPalette.getNameFromIndex(stream.readUnsignedShort());
+                    metaDataNamesArr[i] = nbtPalette.getNameFromIndex(StreamHelper.readVarIntFromStream(stream));
                 }
             }
 
-            LocalMaterialData[] materialsArr = new LocalMaterialData[stream.readShort()];
+            LocalMaterialData[] materialsArr = new LocalMaterialData[StreamHelper.readVarIntFromStream(stream)];
             for (int i = 0; i < materialsArr.length; i++) {
                 String materialName;
                 if (materialPalette == null) {
                     materialName = StreamHelper.readStringFromStream(stream);
                 } else {
-                    materialName = materialPalette.getMaterial(stream.readUnsignedShort());
+                    materialName = materialPalette.getMaterial(StreamHelper.readVarIntFromStream(stream));
                 }
                 try {
                     materialsArr[i] = materialReader.readMaterial(materialName);
@@ -60,17 +60,17 @@ public class BlockUnpacker {
                 }
             }
 
-            short minX = stream.readShort();
-            short maxX = stream.readShort();
-            short minY = stream.readShort();
-            short maxY = stream.readShort();
-            short minZ = stream.readShort();
-            short maxZ = stream.readShort();
+            int minX = StreamHelper.readVarIntFromStream(stream);
+            int maxX = StreamHelper.readVarIntFromStream(stream);
+            int minY = StreamHelper.readVarIntFromStream(stream);
+            int maxY = StreamHelper.readVarIntFromStream(stream);
+            int minZ = StreamHelper.readVarIntFromStream(stream);
+            int maxZ = StreamHelper.readVarIntFromStream(stream);
 
             int sizeX = maxX - minX;
             int sizeY = maxY - minY;
 
-            int numBlocks = stream.readInt();
+            int numBlocks = StreamHelper.readVarIntFromStream(stream);
             byte bitsPerBlock = stream.readByte();
             long mask = (1L << ((long) bitsPerBlock)) - 1;
 
@@ -107,12 +107,12 @@ public class BlockUnpacker {
                 }
             }
 
-            int numNbt = stream.readInt();
+            int numNbt = StreamHelper.readVarIntFromStream(stream);
             for (int i = 0; i < numNbt; i++) {
-                short x = stream.readShort();
-                short y = stream.readShort();
-                short z = stream.readShort();
-                short idx = stream.readShort();
+                int x = StreamHelper.readVarIntFromStream(stream);
+                int y = StreamHelper.readVarIntFromStream(stream);
+                int z = StreamHelper.readVarIntFromStream(stream);
+                int idx = StreamHelper.readVarIntFromStream(stream);
                 Optional<BlockFunction<?>> block = blocks.stream().filter(b -> b.x == x && b.y == y && b.z == z).findFirst();
                 block.ifPresent(blockFunction -> {
                     blockFunction.nbtName = metaDataNamesArr[idx];
@@ -127,33 +127,33 @@ public class BlockUnpacker {
         // Random blocks
         boolean hasRandomBlocks = stream.readBoolean();
         if (hasRandomBlocks) {
-            int materialPaletteSize = stream.readInt();
+            int materialPaletteSize = StreamHelper.readVarIntFromStream(stream);
             LocalMaterialData[] materials = new LocalMaterialData[materialPaletteSize];
             for (int i = 0; i < materialPaletteSize; i++) {
                 if (materialPalette == null) {
                     materials[i] = materialReader.readMaterial(StreamHelper.readStringFromStream(stream));
                 } else {
-                    materials[i] = materialReader.readMaterial(materialPalette.getMaterial(stream.readUnsignedShort()));
+                    materials[i] = materialReader.readMaterial(materialPalette.getMaterial(StreamHelper.readVarIntFromStream(stream)));
                 }
             }
 
-            int metaDataPaletteSize = stream.readInt();
+            int metaDataPaletteSize = StreamHelper.readVarIntFromStream(stream);
             String[] metaDataPalette = new String[metaDataPaletteSize];
             for (int i = 0; i < metaDataPaletteSize; i++) {
                 if (nbtPalette == null) {
                     metaDataPalette[i] = StreamHelper.readStringFromStream(stream);
                 } else {
-                    metaDataPalette[i] = nbtPalette.getNameFromIndex(stream.readUnsignedShort());
+                    metaDataPalette[i] = nbtPalette.getNameFromIndex(StreamHelper.readVarIntFromStream(stream));
                 }
             }
 
-            int numRandomBlocks = stream.readInt();
+            int numRandomBlocks = StreamHelper.readVarIntFromStream(stream);
             byte randomBlockType = stream.readByte();  // 3 = BO3, 4 = BO4
             if (randomBlockType == 3) {
                 for (int i = 0; i < numRandomBlocks; i++) {
                     BO3RandomBlockFunction rbf = new BO3RandomBlockFunction();
                     rbf.x = stream.readByte();
-                    rbf.y = stream.readShort();
+                    rbf.y = (short) StreamHelper.readVarIntFromStream(stream);
                     rbf.z = stream.readByte();
 
                     rbf.blockCount = stream.readByte();
@@ -163,9 +163,9 @@ public class BlockUnpacker {
                     rbf.metaDataTags = new NamedBinaryTag[rbf.blockCount];
                     for (int j = 0; j < rbf.blockCount; j++) {
                         rbf.blockChances[j] = stream.readByte();
-                        short blockIdx = stream.readShort();
+                        int blockIdx = StreamHelper.readVarIntFromStream(stream);
                         rbf.blocks[j] = blockIdx == 0 ? null : materials[blockIdx - 1];
-                        short metaDataIdx = stream.readShort();
+                        int metaDataIdx = StreamHelper.readVarIntFromStream(stream);
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
                         if (rbf.metaDataNames[j] != null && nbtPalette != null) {
                             rbf.metaDataTags[j] = nbtPalette.getNBTFromName(rbf.metaDataNames[j]);
@@ -176,7 +176,7 @@ public class BlockUnpacker {
                 for (int i = 0; i < numRandomBlocks; i++) {
                     BO4RandomBlockFunction rbf = new BO4RandomBlockFunction();
                     rbf.x = stream.readByte();
-                    rbf.y = stream.readShort();
+                    rbf.y = (short) StreamHelper.readVarIntFromStream(stream);
                     rbf.z = stream.readByte();
 
                     rbf.blockCount = stream.readByte();
@@ -186,9 +186,9 @@ public class BlockUnpacker {
                     rbf.metaDataTags = new NamedBinaryTag[rbf.blockCount];
                     for (int j = 0; j < rbf.blockCount; j++) {
                         rbf.blockChances[j] = stream.readByte();
-                        short blockIdx = stream.readShort();
+                        int blockIdx = StreamHelper.readVarIntFromStream(stream);
                         rbf.blocks[j] = blockIdx == 0 ? null : materials[blockIdx - 1];
-                        short metaDataIdx = stream.readShort();
+                        int metaDataIdx = StreamHelper.readVarIntFromStream(stream);
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
                         if (rbf.metaDataNames[j] != null && nbtPalette != null) {
                             rbf.metaDataTags[j] = nbtPalette.getNBTFromName(rbf.metaDataNames[j]);

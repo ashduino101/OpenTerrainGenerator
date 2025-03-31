@@ -763,7 +763,7 @@ public class BO3Config extends CustomObjectConfigFile
 		return null;
 	}
 
-	private static final int bo3DataVersion = 5;
+	private static final int bo3DataVersion = 1;
 	public void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException
 	{
 		stream.writeInt(bo3DataVersion);
@@ -779,21 +779,21 @@ public class BO3Config extends CustomObjectConfigFile
 		stream.writeBoolean(this.tree);
 		stream.writeByte(this.frequency);  // 1-200
 		stream.writeFloat((float)this.rarity);  // 1-100
-		stream.writeInt(this.maxSpawn);
+		StreamHelper.writeVarIntToStream(stream, this.maxSpawn);
 		stream.writeBoolean(this.rotateRandomly);
 		stream.writeByte(this.spawnHeight.ordinal());
-		stream.writeShort(this.spawnHeightOffset);
-		stream.writeInt(this.spawnHeightVariance);
+		StreamHelper.writeVarIntToStream(stream, this.spawnHeightOffset);
+		StreamHelper.writeVarIntToStream(stream, this.spawnHeightVariance);
 
-		stream.writeShort(this.minHeight);
-		stream.writeShort(this.maxHeight);
+		StreamHelper.writeVarIntToStream(stream, this.minHeight);
+		StreamHelper.writeVarIntToStream(stream, this.maxHeight);
 
 		stream.writeByte(this.extrudeMode.ordinal());
-		this.extrudeThroughBlocks.writeToStream(stream);
+		this.extrudeThroughBlocks.writeToStream(stream, materialPalette);
 
-		stream.writeInt(this.maxBranchDepth);
+		StreamHelper.writeVarIntToStream(stream, this.maxBranchDepth);
 
-		this.sourceBlocks.writeToStream(stream);
+		this.sourceBlocks.writeToStream(stream, materialPalette);
 
 		stream.writeByte(this.maxPercentageOutsideSourceBlock);
 		stream.writeByte(this.outsideSourceBlock.ordinal());
@@ -811,7 +811,7 @@ public class BO3Config extends CustomObjectConfigFile
 		BlockPacker packer = new BlockPacker(stream);
 		packer.packToStream(blocks, materialPalette, metadataPalette);
 
-		stream.writeInt(this.bo3Checks[0].length);
+		StreamHelper.writeVarIntToStream(stream, this.bo3Checks[0].length);
 		for (BO3Check func : this.bo3Checks[0]) {
 			if (func instanceof BlockCheckNot) {
 				stream.writeByte(3);
@@ -826,13 +826,13 @@ public class BO3Config extends CustomObjectConfigFile
 			} else {
 				stream.writeByte(-1);
 			}
-            stream.writeShort(func.x);
-			stream.writeShort(func.y);
-			stream.writeShort(func.z);
+			StreamHelper.writeVarIntToStream(stream, func.x);
+			StreamHelper.writeVarIntToStream(stream, func.y);
+			StreamHelper.writeVarIntToStream(stream, func.z);
 
 			if (func instanceof BlockCheck) {
 				BlockCheck check = (BlockCheck) func;
-				check.writeMaterialsToStream(stream);
+				check.writeMaterialsToStream(stream, materialPalette);
 			} else if (func instanceof LightCheck) {
 				LightCheck check = (LightCheck) func;
 				check.writeLevelsToStream(stream);
@@ -843,12 +843,12 @@ public class BO3Config extends CustomObjectConfigFile
 		}
 
 		// TODO: save/load these as binary
-		stream.writeInt(this.branches[0].length);
+		StreamHelper.writeVarIntToStream(stream, this.branches[0].length);
 		for (BO3BranchFunction func : this.branches[0]) {
 			StreamHelper.writeStringToStream(stream, func.write());
 		}
 
-		stream.writeInt(this.entityFunctions[0].length);
+		StreamHelper.writeVarIntToStream(stream, this.entityFunctions[0].length);
 		for (BO3EntityFunction func : this.entityFunctions[0]) {
 			StreamHelper.writeStringToStream(stream, func.write());
 		}
@@ -861,20 +861,15 @@ public class BO3Config extends CustomObjectConfigFile
 			throw new UnsupportedOperationException("BO3 data version too new (" + version + "). I only know up to " + bo3DataVersion);
 		}
 
-		boolean isStripped = false;
-		if (version >= 4) {
-			isStripped = stream.readBoolean();
+		boolean isStripped = stream.readBoolean();
+		boolean usePalettes = stream.readBoolean();
+		if (usePalettes && (materialPalette == null || nbtPalette == null)) {
+			throw new InvalidConfigException("BO3 requires material and NBT palettes but none were provided!");
 		}
-		if (version >= 5) {
-			boolean usePalettes = stream.readBoolean();
-			if (usePalettes && (materialPalette == null || nbtPalette == null)) {
-				throw new InvalidConfigException("BO3 requires material and NBT palettes but none were provided!");
-			}
-			if (!usePalettes) {
-				// make sure not to use the material palette
-				materialPalette = null;
-				nbtPalette = null;
-			}
+		if (!usePalettes) {
+			// make sure not to use the palettes even if they're provided
+			materialPalette = null;
+			nbtPalette = null;
 		}
 
 		BO3Config config = new BO3Config(null);
@@ -890,23 +885,23 @@ public class BO3Config extends CustomObjectConfigFile
 		config.tree = stream.readBoolean();
 		config.frequency = stream.readByte();
 		config.rarity = stream.readFloat();
-		config.maxSpawn = stream.readInt();
+		config.maxSpawn = StreamHelper.readVarIntFromStream(stream);
 		config.rotateRandomly = stream.readBoolean();
 		config.spawnHeight = SpawnHeightEnum.values()[stream.readByte()];
-		config.spawnHeightOffset = stream.readShort();
-		config.spawnHeightVariance = stream.readInt();
+		config.spawnHeightOffset = StreamHelper.readVarIntFromStream(stream);
+		config.spawnHeightVariance = StreamHelper.readVarIntFromStream(stream);
 
-		config.minHeight = stream.readShort();
-		config.maxHeight = stream.readShort();
+		config.minHeight = StreamHelper.readVarIntFromStream(stream);
+		config.maxHeight = StreamHelper.readVarIntFromStream(stream);
 
 		config.extrudeMode = ExtrudeMode.values()[stream.readByte()];
 		config.extrudeThroughBlocks = new MaterialSet();
-		config.extrudeThroughBlocks.parseAndAddFromStream(stream, materialReader);
+		config.extrudeThroughBlocks.parseAndAddFromStream(stream, materialReader, materialPalette);
 
-		config.maxBranchDepth = stream.readInt();
+		config.maxBranchDepth = StreamHelper.readVarIntFromStream(stream);
 
 		config.sourceBlocks = new MaterialSet();
-		config.sourceBlocks.parseAndAddFromStream(stream, materialReader);
+		config.sourceBlocks.parseAndAddFromStream(stream, materialReader, materialPalette);
 
 		config.maxPercentageOutsideSourceBlock = stream.readByte();
 		config.outsideSourceBlock = OutsideSourceBlock.values()[stream.readByte()];
@@ -928,18 +923,18 @@ public class BO3Config extends CustomObjectConfigFile
 
 		config.boundingBoxes[0] = box;
 
-		int numBO3Checks = stream.readInt();
+		int numBO3Checks = StreamHelper.readVarIntFromStream(stream);
 		config.bo3Checks[0] = new BO3Check[numBO3Checks];
 		for (int i = 0; i < numBO3Checks; i++) {
 			byte type = stream.readByte();
-			short x = stream.readShort();
-			short y = stream.readShort();
-			short z = stream.readShort();
+			short x = (short) StreamHelper.readVarIntFromStream(stream);
+			short y = (short) StreamHelper.readVarIntFromStream(stream);
+			short z = (short) StreamHelper.readVarIntFromStream(stream);
 
 			BO3Check check = null;
 			if (type == 0) {
 				BlockCheck c = new BlockCheck();
-				c.readMaterialsFromStream(stream, materialReader);
+				c.readMaterialsFromStream(stream, materialReader, materialPalette);
 				check = c;
 			} else if (type == 1) {
 				LightCheck c = new LightCheck();
@@ -951,7 +946,7 @@ public class BO3Config extends CustomObjectConfigFile
 				check = c;
 			} else if (type == 3) {
 				BlockCheckNot c = new BlockCheckNot();
-				c.readMaterialsFromStream(stream, materialReader);
+				c.readMaterialsFromStream(stream, materialReader, materialPalette);
 				check = c;
 			} else if (type == 4) {
 				ModCheckNot c = new ModCheckNot();
@@ -967,14 +962,14 @@ public class BO3Config extends CustomObjectConfigFile
 		}
 
 		// TODO: save/load these as binary
-		int numBranches = stream.readInt();
+		int numBranches = StreamHelper.readVarIntFromStream(stream);
 		config.branches[0] = new BO3BranchFunction[numBranches];
 		for (int i = 0; i < numBranches; i++) {
 			BO3BranchFunction func = BO3BranchFunction.fromStream(stream, logger, materialReader);
 			config.branches[0][i] = func;
 		}
 
-		int numEntities = stream.readInt();
+		int numEntities = StreamHelper.readVarIntFromStream(stream);
 //		config.entityFunctions[0] = new BO3EntityFunction[numEntities];
 		config.entityFunctions[0] = new BO3EntityFunction[0];
 		for (int i = 0; i < numEntities; i++) {
@@ -983,7 +978,6 @@ public class BO3Config extends CustomObjectConfigFile
 			// TODO doesn't work
 		}
 
-		// FIXME: what is the preset folder name used for here?
 		config.rotateBlocksAndChecks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
 
 		return config;

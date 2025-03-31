@@ -229,7 +229,8 @@ public class PackedPreset implements IPreset
                     return new BO4(name, null, config4);
             }
         } catch (Exception e) {
-            OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Failed to load packed custom object " + name + ": " + e);
+            OTG.getEngine().getLogger().log(LogLevel.ERROR, LogCategory.CUSTOM_OBJECTS, "Failed to load packed custom object " + name + ":");
+            e.printStackTrace();
         }
         return null;
     }

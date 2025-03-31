@@ -34,6 +34,7 @@ import com.pg85.otg.interfaces.IWorldGenRegion;
 import com.pg85.otg.util.ChunkCoordinate;
 import com.pg85.otg.util.biome.ReplaceBlockMatrix;
 import com.pg85.otg.util.bo3.Rotation;
+import com.pg85.otg.util.helpers.StreamHelper;
 import com.pg85.otg.util.materials.LocalMaterialData;
 import com.pg85.otg.util.materials.LocalMaterials;
 import com.pg85.otg.util.materials.MaterialPalette;
@@ -575,15 +576,15 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		return null;
 	}
 
-	private static final int bo2DataVersion = 2;
+	private static final int bo2DataVersion = 1;
 	public void writeToStream(DataOutput stream, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException
 	{
 		stream.writeShort(bo2DataVersion);
 		// metadataPalette isn't actually used, but we need it for the BlockPacker
 		stream.writeBoolean(materialPalette != null && metadataPalette != null);
 
-		this.spawnOnBlockType.writeToStream(stream);
-		this.collisionBlockType.writeToStream(stream);
+		this.spawnOnBlockType.writeToStream(stream, materialPalette);
+		this.collisionBlockType.writeToStream(stream, materialPalette);
 
 		stream.writeBoolean(this.spawnWater);
 		stream.writeBoolean(this.spawnLava);
@@ -598,10 +599,10 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		stream.writeBoolean(this.needsFoundation);
 		stream.writeBoolean(this.doReplaceBlocks);
 
-		stream.writeInt(this.rarity);
+		StreamHelper.writeVarIntToStream(stream, this.rarity);
 		stream.writeDouble(this.collisionPercentage);
-		stream.writeInt(this.spawnElevationMin);
-		stream.writeInt(this.spawnElevationMax);
+		StreamHelper.writeVarIntToStream(stream, this.spawnElevationMin);
+		StreamHelper.writeVarIntToStream(stream, this.spawnElevationMax);
 
 		BlockPacker packer = new BlockPacker(stream);
 		packer.packToStream(Arrays.asList(this.data[0]), materialPalette, metadataPalette);
@@ -614,24 +615,22 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 			throw new InvalidConfigException("BO2 data version too new (" + version + ")! I only know up to " + bo2DataVersion);
 		}
 
-		if (version >= 2) {
-			// BO2s don't even use the NBT palette so no need to check for that here
-			boolean useMaterialPalette = stream.readBoolean();
-			if (useMaterialPalette && materialPalette == null) {
-				throw new InvalidConfigException("BO2 requires material palette but none was provided!");
-			}
-			if (!useMaterialPalette) {
-				// make sure not to use the material palette
-				materialPalette = null;
-			}
+		// BO2s don't even use the NBT palette so no need to check for that here
+		boolean useMaterialPalette = stream.readBoolean();
+		if (useMaterialPalette && materialPalette == null) {
+			throw new InvalidConfigException("BO2 requires material palette but none was provided!");
+		}
+		if (!useMaterialPalette) {
+			// make sure not to use the material palette
+			materialPalette = null;
 		}
 
 		BO2 newConfig = new BO2(null);
 
 		newConfig.spawnOnBlockType = new MaterialSet();
-		newConfig.spawnOnBlockType.parseAndAddFromStream(stream, materialReader);
+		newConfig.spawnOnBlockType.parseAndAddFromStream(stream, materialReader, materialPalette);
 		newConfig.collisionBlockType = new MaterialSet();
-		newConfig.collisionBlockType.parseAndAddFromStream(stream, materialReader);
+		newConfig.collisionBlockType.parseAndAddFromStream(stream, materialReader, materialPalette);
 
 		newConfig.spawnWater = stream.readBoolean();
 		newConfig.spawnLava = stream.readBoolean();
@@ -646,10 +645,10 @@ public class BO2 extends CustomObjectConfigFile implements CustomObject
 		newConfig.needsFoundation = stream.readBoolean();
 		newConfig.doReplaceBlocks = stream.readBoolean();
 
-		newConfig.rarity = stream.readInt();
+		newConfig.rarity = StreamHelper.readVarIntFromStream(stream);
 		newConfig.collisionPercentage = stream.readDouble();
-		newConfig.spawnElevationMin = stream.readInt();
-		newConfig.spawnElevationMax = stream.readInt();
+		newConfig.spawnElevationMin = StreamHelper.readVarIntFromStream(stream);
+		newConfig.spawnElevationMax = StreamHelper.readVarIntFromStream(stream);
 
 		BlockUnpacker unpacker = new BlockUnpacker();
 		newConfig.data = new ObjectCoordinate[4][];

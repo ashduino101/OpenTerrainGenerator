@@ -4,10 +4,11 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
- * A class representing a table of strings, used for indexed packed settings.
+ * A class representing a table of strings, used for indexed packed data.
  * Settings and functions are combined, as there is no point in separating them.
  *
  */
@@ -16,7 +17,7 @@ public final class StringTable
     private final List<String> strings;
     public StringTable()
     {
-        this.strings = new ArrayList<>();
+        this.strings = new LinkedList<>();
     }
 
     public void packToStream(DataOutput stream) throws IOException
