@@ -19,7 +19,7 @@ public class BO4EntityFunction extends EntityFunction<BO4Config>
 {
 	public BO4EntityFunction() { }
 
-	private BO4EntityFunction(BO4Config holder)
+	public BO4EntityFunction(BO4Config holder)
 	{
 		this.holder = holder;
 	}

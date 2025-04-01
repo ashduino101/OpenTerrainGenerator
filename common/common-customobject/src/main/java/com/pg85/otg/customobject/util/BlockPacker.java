@@ -71,7 +71,7 @@ public class BlockPacker {
                 if (metadataPalette == null) {
                     StreamHelper.writeStringToStream(stream, s);
                 } else {
-                    StreamHelper.writeVarIntToStream(stream, metadataPalette.get(relToAbsNBTPath.get(s)));
+                    StreamHelper.writeVarIntToStream(stream, metadataPalette.indexOf(relToAbsNBTPath.get(s)));
                 }
             }
             String[] materialsArr = materials.toArray(new String[0]);
@@ -226,7 +226,7 @@ public class BlockPacker {
                 } else {
                     String path = baseDir + File.separator + m.getFirst();
                     Path p = Paths.get(path);
-                    String abs = p.toFile().getCanonicalPath();
+                    String abs = p.toAbsolutePath().normalize().toString();
 
                     StreamHelper.writeVarIntToStream(stream, metadataPalette.getOrRegisterNBT(abs, m.getSecond()));
                 }

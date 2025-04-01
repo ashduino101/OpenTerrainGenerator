@@ -1458,7 +1458,26 @@ public class BO4Config extends CustomObjectConfigFile
 		StreamHelper.writeVarIntToStream(stream, this.entityDataBO4.length);
 		for(BO4EntityFunction func : this.entityDataBO4)
 		{
-			func.writeToStream(stream);
+			StreamHelper.writeVarIntToStream(stream, func.x);
+			StreamHelper.writeVarIntToStream(stream, func.y);
+			StreamHelper.writeVarIntToStream(stream, func.z);
+
+			StreamHelper.writeStringToStream(stream, func.resourceLocation);
+			StreamHelper.writeVarIntToStream(stream, func.groupSize);
+			if (metadataPalette != null) {
+				NamedBinaryTag nbtTag;
+				if (func.getNameTagOrNBTFileName().toLowerCase().trim().endsWith(".txt")) {
+					// Slight hack to store string metadata
+					nbtTag = new NamedBinaryTag(NamedBinaryTag.Type.TAG_String, "NBTText", func.getMetaData());
+				} else {
+					nbtTag = func.getNBTTag();
+				}
+				int nbtIdx = metadataPalette.getOrRegisterNBT(func.nameTagOrNBTFileName, nbtTag);
+				StreamHelper.writeVarIntToStream(stream, nbtIdx);
+			} else {
+				StreamHelper.writeStringToStream(stream, func.nameTagOrNBTFileName);
+			}
+			StreamHelper.writeStringToStream(stream, func.originalNameTagOrNBTFileName);
 		}
 
 		BO4BlockFunction[] blocks = getBlocks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);
@@ -1754,7 +1773,38 @@ public class BO4Config extends CustomObjectConfigFile
 		BO4EntityFunction[] entityDataBO4 = new BO4EntityFunction[entityDataOTGPlusLength];
 		for(int i = 0; i < entityDataOTGPlusLength; i++)
 		{
-			entityDataBO4[i] = BO4EntityFunction.fromStream(this, stream, logger);
+			if (version < 6) {
+				entityDataBO4[i] = BO4EntityFunction.fromStream(this, stream, logger);
+			} else {
+				BO4EntityFunction func = new BO4EntityFunction(this);
+
+				func.x = StreamHelper.readVarIntFromStream(stream);
+				func.y = StreamHelper.readVarIntFromStream(stream);
+				func.z = StreamHelper.readVarIntFromStream(stream);
+
+				func.resourceLocation = StreamHelper.readStringFromStream(stream);
+				func.groupSize = StreamHelper.readVarIntFromStream(stream);
+				boolean isTextNBT = false;
+				if (metadataPalette != null) {
+					func.namedBinaryTag = metadataPalette.getNBTFromNameHash(metadataPalette.getHashFromIndex(StreamHelper.readVarIntFromStream(stream)));
+					if (func.namedBinaryTag != null && func.namedBinaryTag.getType() == NamedBinaryTag.Type.TAG_String && Objects.equals(func.namedBinaryTag.getName(), "NBTText")) {
+						func.metaDataTag = (String) func.namedBinaryTag.getValue();
+						isTextNBT = true;
+					}
+				} else {
+					func.nameTagOrNBTFileName = StreamHelper.readStringFromStream(stream);
+				}
+				func.originalNameTagOrNBTFileName = StreamHelper.readStringFromStream(stream);
+
+				if (metadataPalette != null) {
+					func.nameTagOrNBTFileName = func.originalNameTagOrNBTFileName;
+					if (isTextNBT) {
+						func.nameTagOrNBTFileName += ".txt";
+					}
+				}
+
+				entityDataBO4[i] = func;
+			}
 		}
 
 		// Legacy settings, hoping they were always 0 and noone actually used them :/.

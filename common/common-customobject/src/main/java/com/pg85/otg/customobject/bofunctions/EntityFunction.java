@@ -27,7 +27,7 @@ public abstract class EntityFunction<T extends CustomObjectConfigFile> extends C
 	public String resourceLocation = "";
 	public NamedBinaryTag namedBinaryTag = null;
 	public int rotation = 0;
-	private String metaDataTag;
+	public String metaDataTag;
 	
 	@Override
 	public double getX()
@@ -110,7 +110,7 @@ public abstract class EntityFunction<T extends CustomObjectConfigFile> extends C
 
 	public void processNameTagOrFileName(String s, ILogger logger)
 	{
-		if (getHolder().getFile() == null) return;  // FIXME: packed presets
+		if (getHolder().getFile() == null) return;  // Packed presets need to load NBT separately
 		this.originalNameTagOrNBTFileName = s;
 
 		if(this.originalNameTagOrNBTFileName != null && this.originalNameTagOrNBTFileName.toLowerCase().trim().endsWith(".txt"))

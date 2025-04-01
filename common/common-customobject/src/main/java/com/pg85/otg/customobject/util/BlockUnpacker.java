@@ -39,7 +39,7 @@ public class BlockUnpacker {
                 if (nbtPalette == null) {
                     metaDataNamesArr[i] = StreamHelper.readStringFromStream(stream);
                 } else {
-                    metaDataNamesArr[i] = nbtPalette.getNameFromIndex(StreamHelper.readVarIntFromStream(stream));
+                    metaDataNamesArr[i] = String.valueOf(nbtPalette.getHashFromIndex(StreamHelper.readVarIntFromStream(stream)));
                 }
             }
 
@@ -65,7 +65,7 @@ public class BlockUnpacker {
             int minY = StreamHelper.readVarIntFromStream(stream);
             int maxY = StreamHelper.readVarIntFromStream(stream);
             int minZ = StreamHelper.readVarIntFromStream(stream);
-            int maxZ = StreamHelper.readVarIntFromStream(stream);
+            StreamHelper.readVarIntFromStream(stream);  // maxZ is unused here
 
             int sizeX = maxX - minX;
             int sizeY = maxY - minY;
@@ -117,8 +117,9 @@ public class BlockUnpacker {
                 block.ifPresent(blockFunction -> {
                     blockFunction.nbtName = metaDataNamesArr[idx];
                     if (nbtPalette != null) {
+                        blockFunction.nbtName += ".nbt";
                         // Load the packed NBT
-                        blockFunction.nbt = nbtPalette.getNBTFromName(blockFunction.nbtName);
+                        blockFunction.nbt = nbtPalette.getNBTFromNameHash(Integer.parseInt(metaDataNamesArr[idx]));
                     }
                 });
             }
@@ -143,7 +144,7 @@ public class BlockUnpacker {
                 if (nbtPalette == null) {
                     metaDataPalette[i] = StreamHelper.readStringFromStream(stream);
                 } else {
-                    metaDataPalette[i] = nbtPalette.getNameFromIndex(StreamHelper.readVarIntFromStream(stream));
+                    metaDataPalette[i] = String.valueOf(nbtPalette.getHashFromIndex(StreamHelper.readVarIntFromStream(stream)));
                 }
             }
 
@@ -168,7 +169,8 @@ public class BlockUnpacker {
                         int metaDataIdx = StreamHelper.readVarIntFromStream(stream);
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
                         if (rbf.metaDataNames[j] != null && nbtPalette != null) {
-                            rbf.metaDataTags[j] = nbtPalette.getNBTFromName(rbf.metaDataNames[j]);
+                            rbf.metaDataTags[j] = nbtPalette.getNBTFromNameHash(Integer.parseInt(rbf.metaDataNames[j]));
+                            rbf.metaDataNames[j] += ".nbt";
                         }
                     }
                 }
@@ -191,7 +193,8 @@ public class BlockUnpacker {
                         int metaDataIdx = StreamHelper.readVarIntFromStream(stream);
                         rbf.metaDataNames[j] = metaDataIdx == 0 ? null : metaDataPalette[metaDataIdx - 1];
                         if (rbf.metaDataNames[j] != null && nbtPalette != null) {
-                            rbf.metaDataTags[j] = nbtPalette.getNBTFromName(rbf.metaDataNames[j]);
+                            rbf.metaDataTags[j] = nbtPalette.getNBTFromNameHash(Integer.parseInt(rbf.metaDataNames[j]));
+                            rbf.metaDataNames[j] += ".nbt";
                         }
                     }
                 }
