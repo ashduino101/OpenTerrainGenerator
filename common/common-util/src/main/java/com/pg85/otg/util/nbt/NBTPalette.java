@@ -43,7 +43,7 @@ public class NBTPalette {
         for (int item : hashes)
         {
             NamedBinaryTag tag = this.nameHashToNbt.get(item);
-            // FIXME: how does this happen?
+
             stream.writeBoolean(tag == null);
             if (tag == null) continue;
 

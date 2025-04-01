@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
+import com.pg85.otg.customobject.bo4.bo4function.BO4EntityFunction;
 import com.pg85.otg.util.StringTable;
 import com.pg85.otg.config.standard.WorldStandardValues;
 import com.pg85.otg.constants.SettingsEnums.ConfigMode;
@@ -763,7 +764,7 @@ public class BO3Config extends CustomObjectConfigFile
 		return null;
 	}
 
-	private static final int bo3DataVersion = 1;
+	private static final int bo3DataVersion = 2;
 	public void writeToStream(DataOutput stream, boolean strip, String presetFolderName, Path otgRootFolder, ILogger logger, CustomObjectManager customObjectManager, IMaterialReader materialReader, CustomObjectResourcesManager manager, IModLoadedChecker modLoadedChecker, MaterialPalette materialPalette, NBTPalette metadataPalette) throws IOException
 	{
 		stream.writeInt(bo3DataVersion);
@@ -850,7 +851,26 @@ public class BO3Config extends CustomObjectConfigFile
 
 		StreamHelper.writeVarIntToStream(stream, this.entityFunctions[0].length);
 		for (BO3EntityFunction func : this.entityFunctions[0]) {
-			StreamHelper.writeStringToStream(stream, func.write());
+			StreamHelper.writeVarIntToStream(stream, func.x);
+			StreamHelper.writeVarIntToStream(stream, func.y);
+			StreamHelper.writeVarIntToStream(stream, func.z);
+
+			StreamHelper.writeStringToStream(stream, func.resourceLocation);
+			StreamHelper.writeVarIntToStream(stream, func.groupSize);
+			if (metadataPalette != null) {
+				NamedBinaryTag nbtTag;
+				if (func.getNameTagOrNBTFileName().toLowerCase().trim().endsWith(".txt")) {
+					// Slight hack to store string metadata
+					nbtTag = new NamedBinaryTag(NamedBinaryTag.Type.TAG_String, "NBTText", func.getMetaData());
+				} else {
+					nbtTag = func.getNBTTag();
+				}
+				int nbtIdx = metadataPalette.getOrRegisterNBT(func.nameTagOrNBTFileName, nbtTag);
+				StreamHelper.writeVarIntToStream(stream, nbtIdx);
+			} else {
+				StreamHelper.writeStringToStream(stream, func.nameTagOrNBTFileName);
+			}
+			StreamHelper.writeStringToStream(stream, func.originalNameTagOrNBTFileName);
 		}
 	}
 
@@ -961,7 +981,6 @@ public class BO3Config extends CustomObjectConfigFile
 			config.bo3Checks[0][i] = check;
 		}
 
-		// TODO: save/load these as binary
 		int numBranches = StreamHelper.readVarIntFromStream(stream);
 		config.branches[0] = new BO3BranchFunction[numBranches];
 		for (int i = 0; i < numBranches; i++) {
@@ -970,12 +989,40 @@ public class BO3Config extends CustomObjectConfigFile
 		}
 
 		int numEntities = StreamHelper.readVarIntFromStream(stream);
-//		config.entityFunctions[0] = new BO3EntityFunction[numEntities];
-		config.entityFunctions[0] = new BO3EntityFunction[0];
+		config.entityFunctions[0] = new BO3EntityFunction[numEntities];
 		for (int i = 0; i < numEntities; i++) {
-			BO3EntityFunction func = BO3EntityFunction.fromStream(stream, logger, materialReader);
-//			config.entityFunctions[0][i] = func;
-			// TODO doesn't work
+			if (version < 2) {
+				config.entityFunctions[0][i] = BO3EntityFunction.fromStream(stream, logger, materialReader);
+			} else {
+				BO3EntityFunction func = new BO3EntityFunction();
+
+				func.x = StreamHelper.readVarIntFromStream(stream);
+				func.y = StreamHelper.readVarIntFromStream(stream);
+				func.z = StreamHelper.readVarIntFromStream(stream);
+
+				func.resourceLocation = StreamHelper.readStringFromStream(stream);
+				func.groupSize = StreamHelper.readVarIntFromStream(stream);
+				boolean isTextNBT = false;
+				if (nbtPalette != null) {
+					func.namedBinaryTag = nbtPalette.getNBTFromNameHash(nbtPalette.getHashFromIndex(StreamHelper.readVarIntFromStream(stream)));
+					if (func.namedBinaryTag != null && func.namedBinaryTag.getType() == NamedBinaryTag.Type.TAG_String && Objects.equals(func.namedBinaryTag.getName(), "NBTText")) {
+						func.metaDataTag = (String) func.namedBinaryTag.getValue();
+						isTextNBT = true;
+					}
+				} else {
+					func.nameTagOrNBTFileName = StreamHelper.readStringFromStream(stream);
+				}
+				func.originalNameTagOrNBTFileName = StreamHelper.readStringFromStream(stream);
+
+				if (nbtPalette != null) {
+					func.nameTagOrNBTFileName = func.originalNameTagOrNBTFileName;
+					if (isTextNBT) {
+						func.nameTagOrNBTFileName += ".txt";
+					}
+				}
+
+				config.entityFunctions[0][i] = func;
+			}
 		}
 
 		config.rotateBlocksAndChecks(presetFolderName, otgRootFolder, logger, customObjectManager, materialReader, manager, modLoadedChecker);

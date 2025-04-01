@@ -150,11 +150,6 @@ public final class PackedFileSettings
         switch (stream.readByte()) {
             case 1:  // plain setting
                 String name = table.getStringById(stream.readShort());
-//                short valueLen = stream.readShort();
-//                // FIXME: for some reason readUTF doesn't work here
-//                byte[] buf = new byte[valueLen];
-//                stream.read(buf);
-//                String value = new String(buf);
                 String value = stream.readUTF();
                 map.addRawSetting(RawSettingValue.create(RawSettingValue.ValueType.PLAIN_SETTING, String.format("%s: %s", name, value)));
                 break;

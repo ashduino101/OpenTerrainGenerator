@@ -56,8 +56,7 @@ public class BO3EntityFunction extends EntityFunction<BO3Config> implements IEnt
 		int bracketIndex = configFunctionString.indexOf('(');
 		String parameters = configFunctionString.substring(bracketIndex + 1, configFunctionString.length() - 1);
 		List<String> args = Arrays.asList(StringHelper.readCommaSeperatedString(parameters));
-//		entityFunction.load(args, logger, materialReader);
-		// FIXME FIXME FIXME
+		entityFunction.load(args, logger, materialReader);
 		return entityFunction;
 	}
 }
