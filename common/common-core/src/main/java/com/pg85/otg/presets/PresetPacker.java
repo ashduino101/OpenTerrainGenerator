@@ -15,7 +15,6 @@ import com.pg85.otg.customobject.bo3.bo3function.BO3BranchFunction;
 import com.pg85.otg.customobject.bo4.BO4;
 import com.pg85.otg.customobject.bo4.BO4Data;
 import com.pg85.otg.customobject.bo4.bo4function.BO4BranchFunction;
-import com.pg85.otg.customobject.bofunctions.BlockFunction;
 import com.pg85.otg.customobject.structures.Branch;
 import com.pg85.otg.interfaces.*;
 import com.pg85.otg.util.bo3.Rotation;
@@ -23,15 +22,11 @@ import com.pg85.otg.util.logging.LogCategory;
 import com.pg85.otg.util.logging.LogLevel;
 import com.pg85.otg.util.materials.MaterialPalette;
 import com.pg85.otg.util.nbt.NBTPalette;
-import com.pg85.otg.util.nbt.NamedBinaryTag;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
