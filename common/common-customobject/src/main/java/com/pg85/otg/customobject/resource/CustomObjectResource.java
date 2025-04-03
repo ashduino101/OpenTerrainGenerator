@@ -65,6 +65,10 @@ public class CustomObjectResource extends BiomeResourceBase implements ICustomOb
 		}
 		return this.objects;
 	}
+
+	public List<String> getObjectNames() {
+		return this.objectNames;
+	}
 	
 	@Override
 	public String toString()

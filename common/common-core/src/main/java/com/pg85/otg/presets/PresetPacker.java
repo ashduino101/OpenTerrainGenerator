@@ -1,9 +1,11 @@
 package com.pg85.otg.presets;
 
 import com.pg85.otg.OTG;
+import com.pg85.otg.config.ConfigFunction;
 import com.pg85.otg.config.biome.BiomeConfig;
 import com.pg85.otg.config.io.PackedFileSettings;
 import com.pg85.otg.config.io.FileSettingsReader;
+import com.pg85.otg.customobject.resource.*;
 import com.pg85.otg.util.StringTable;
 import com.pg85.otg.config.io.SettingsMap;
 import com.pg85.otg.constants.Constants;
@@ -106,7 +108,22 @@ public class PresetPacker
         this.stage = PackingStage.CustomObjects;
         HashMap<String, Long> biomeObjectOffsets = new HashMap<>();
 
-        ArrayList<String> boNames = OTG.getEngine().getCustomObjectManager().getGlobalObjects().getAllBONamesForPreset(preset.getId(), OTG.getEngine().getLogger(), OTG.getEngine().getOTGRootFolder());
+        ArrayList<String> boNames = new ArrayList<>();
+        for (IBiomeConfig bc : biomeConfigs) {
+            List<ConfigFunction<IBiomeConfig>> resourceQueue = ((BiomeConfig) bc).getResourceQueue();
+            for (ConfigFunction<IBiomeConfig> func : resourceQueue) {
+                if (func instanceof TreeResource) {
+                    boNames.addAll(((TreeResource) func).getTreeNames());
+                } else if (func instanceof CustomObjectResource) {
+                    boNames.addAll(((CustomObjectResource) func).getObjectNames());
+                } else if (func instanceof CustomStructureResource) {
+                    boNames.addAll(((CustomStructureResource) func).getObjectNames());
+                }
+            }
+        }
+        if (preset.getWorldConfig().getBO3AtSpawn() != null) {
+            boNames.add(preset.getWorldConfig().getBO3AtSpawn());
+        }
         this.totalObjects = boNames.size();
 
         for (String boName : boNames) {

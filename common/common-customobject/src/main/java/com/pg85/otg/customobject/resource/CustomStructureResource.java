@@ -71,7 +71,11 @@ public class CustomStructureResource extends BiomeResourceBase implements ICusto
 			}
 		}
 		return objects;
-	}	
+	}
+
+	public List<String> getObjectNames() {
+		return this.objectNames;
+	}
 	
 	@Override
 	public String toString()

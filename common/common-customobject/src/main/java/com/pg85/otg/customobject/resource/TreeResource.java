@@ -170,6 +170,10 @@ public class TreeResource extends BiomeResourceBase implements ICustomObjectReso
 		}
 	}
 
+	public List<String> getTreeNames() {
+		return this.treeNames;
+	}
+
 	@Override
 	public String toString()
 	{
